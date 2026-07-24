@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Bookmark Organizer</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="header">
+        <div>
+          <p class="eyebrow">Local Chrome AI</p>
+          <h1>AI Bookmark Organizer</h1>
+        </div>
+        <span id="aiBadge" class="badge badge-muted">Checking</span>
+      </header>
+
+      <section class="panel">
+        <p class="intro">
+          Scan your bookmarks, preview suggested folders, then apply the changes when
+          they look right. Bookmark titles and URLs stay on this device.
+        </p>
+
+        <div class="actions">
+          <button id="scanButton" class="button button-primary" type="button">
+            Scan &amp; Organize Bookmarks
+          </button>
+          <button id="applyButton" class="button button-secondary" type="button" disabled>
+            Apply Changes
+          </button>
+        </div>
+
+        <div class="status-card" aria-live="polite">
+          <div class="status-row">
+            <span id="statusDot" class="status-dot"></span>
+            <span id="statusText">Checking if Chrome Built-in AI is available...</span>
+          </div>
+          <div class="progress-track" aria-hidden="true">
+            <div id="progressBar" class="progress-bar"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="preview-section" aria-labelledby="previewTitle">
+        <div class="preview-heading">
+          <h2 id="previewTitle">Preview</h2>
+          <span id="previewCount" class="preview-count">0 bookmarks</span>
+        </div>
+        <div id="emptyState" class="empty-state">
+          Suggestions will appear here before anything is changed.
+        </div>
+        <ul id="previewList" class="preview-list"></ul>
+      </section>
+
+      <footer class="footer">
+        <span>Private by default. No API keys. No external requests.</span>
+      </footer>
+    </main>
+
+    <script src="popup.js" defer></script>
+  </body>
+</html>

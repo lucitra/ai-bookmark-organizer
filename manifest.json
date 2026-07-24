@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "AI Bookmark Organizer",
+  "version": "1.0.0",
+  "description": "Organize Chrome bookmarks locally with Chrome Built-in AI.",
+  "minimum_chrome_version": "127",
+  "permissions": ["bookmarks", "storage"],
+  "action": {
+    "default_title": "AI Bookmark Organizer",
+    "default_popup": "popup.html"
+  }
+}

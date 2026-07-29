@@ -1,15 +1,14 @@
 # AI Bookmark Organizer Mark
 
-The product mark combines:
+The product mark is two overlapping bookmarks. The back bookmark is
+`#0B6E66`, the front is `#2DD4BF`. There is no outline and no separating gap:
+the colour change is the boundary, which keeps the mark crisp at 16 px.
 
-- A bookmark silhouette
-- Three lower category tabs for organization
-- One teal Lucitra caret
+`logo.svg` is the production source. `logo-mono.svg` and `logo-mist.svg` are
+the single-colour versions and reinstate a 6-unit gap around the front
+bookmark, drawn as trimmed geometry rather than a stroke. On the ink app tile
+the fills lift to `#0F857A` and `#3FE0CC` so they clear the dark field.
 
-The production source is `logo.svg`. It uses a Lucitra teal (`#0D9488`)
-bookmark field with an ink (`#111824`) caret, following the brand rule that the
-caret goes ink on teal. It has no gradients, shadows, or text so it remains
-legible at Chrome toolbar sizes and on both light and dark Chrome themes.
-
-The extension icons under `icons/` and the store icon under `store-assets/` are
-raster exports of this source.
+Extension icons under `icons/` use the bare mark at 16 and 32 px and the app
+tile at 48 and 128 px. Full artwork, alternates and the design rationale are in
+`brand/claude/`.

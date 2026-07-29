@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800">
+  <defs>
+    <linearGradient id="page" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fcfdfd"/>
+      <stop offset="1" stop-color="#f1f5f5"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#0f172a" flood-opacity=".16"/>
+    </filter>
+  </defs>
+
+  <rect width="1280" height="800" fill="url(#page)"/>
+  <rect x="24" y="24" width="1232" height="752" rx="20" fill="#fff" stroke="#dfe5e7"/>
+  <rect x="24" y="24" width="1232" height="58" rx="20" fill="#f8fafc"/>
+  <path d="M24 62h1232v20H24z" fill="#f8fafc"/>
+  <circle cx="58" cy="53" r="7" fill="#d8dee3"/>
+  <circle cx="82" cy="53" r="7" fill="#d8dee3"/>
+  <circle cx="106" cy="53" r="7" fill="#d8dee3"/>
+  <rect x="164" y="39" width="680" height="28" rx="14" fill="#edf1f3"/>
+  <text x="188" y="58" font-family="Arial, sans-serif" font-size="13" fill="#667085">chrome://bookmarks</text>
+
+  <rect x="24" y="82" width="250" height="694" fill="#f8fafb"/>
+  <text x="54" y="132" font-family="Arial, sans-serif" font-size="19" font-weight="700" fill="#111824">Bookmarks</text>
+  <rect x="44" y="160" width="210" height="42" rx="9" fill="#eaf3f2"/>
+  <text x="64" y="187" font-family="Arial, sans-serif" font-size="14" fill="#0f766e">AI Organized Bookmarks</text>
+  <text x="64" y="232" font-family="Arial, sans-serif" font-size="14" fill="#475467">Bookmarks bar</text>
+  <text x="64" y="272" font-family="Arial, sans-serif" font-size="14" fill="#475467">Other bookmarks</text>
+
+  <text x="316" y="135" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#111824">AI Organized Bookmarks</text>
+  <g fill="#fff" stroke="#e2e8f0">
+    <rect x="316" y="164" width="220" height="92" rx="12"/>
+    <rect x="556" y="164" width="220" height="92" rx="12"/>
+    <rect x="316" y="276" width="220" height="92" rx="12"/>
+  </g>
+  <g font-family="Arial, sans-serif">
+    <text x="340" y="202" font-size="16" font-weight="700" fill="#111824">Technology</text>
+    <text x="340" y="229" font-size="13" fill="#667085">8 bookmarks</text>
+    <text x="580" y="202" font-size="16" font-weight="700" fill="#111824">Recipes</text>
+    <text x="580" y="229" font-size="13" fill="#667085">5 bookmarks</text>
+    <text x="340" y="314" font-size="16" font-weight="700" fill="#111824">Design</text>
+    <text x="340" y="341" font-size="13" fill="#667085">4 bookmarks</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="806" y="106" width="414" height="640" rx="18" fill="#f7f8fb"/>
+    <rect x="824" y="124" width="378" height="73" rx="12" fill="#f7f8fb"/>
+    <text x="824" y="142" font-family="Arial, sans-serif" font-size="10" font-weight="700" letter-spacing="1.2" fill="#667085">LOCAL CHROME AI</text>
+    <text x="824" y="173" font-family="Arial, sans-serif" font-size="21" font-weight="700" fill="#111827">AI Bookmark Organizer</text>
+    <rect x="1114" y="132" width="88" height="28" rx="14" fill="#ecfdf3" stroke="#abefc6"/>
+    <text x="1158" y="151" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="700" fill="#067647">AI Ready</text>
+
+    <rect x="824" y="197" width="378" height="197" rx="14" fill="#fff" stroke="#e5e7eb"/>
+    <text x="842" y="225" font-family="Arial, sans-serif" font-size="13" fill="#344054">
+      <tspan x="842" dy="0">Scan your bookmarks, preview suggested folders, then</tspan>
+      <tspan x="842" dy="20">apply the changes when they look right.</tspan>
+    </text>
+    <rect x="842" y="271" width="210" height="42" rx="10" fill="#1f3a8a"/>
+    <text x="947" y="297" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#fff">Scan &amp; Organize Bookmarks</text>
+    <rect x="1062" y="271" width="122" height="42" rx="10" fill="#fff" stroke="#d0d5dd"/>
+    <text x="1123" y="297" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="700" fill="#344054">Apply Changes</text>
+    <rect x="842" y="329" width="342" height="48" rx="10" fill="#fcfcfd" stroke="#e5e7eb"/>
+    <circle cx="858" cy="348" r="5" fill="#0f766e"/>
+    <text x="872" y="352" font-family="Arial, sans-serif" font-size="11" fill="#344054">Scan complete. Review 3 suggested changes.</text>
+    <rect x="854" y="362" width="318" height="5" rx="2.5" fill="#0f766e"/>
+
+    <rect x="824" y="410" width="378" height="286" rx="14" fill="#fff" stroke="#e5e7eb"/>
+    <text x="842" y="439" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#111827">Preview</text>
+    <text x="1182" y="439" text-anchor="end" font-family="Arial, sans-serif" font-size="11" fill="#667085">3 bookmarks</text>
+    <line x1="842" y1="451" x2="1184" y2="451" stroke="#e5e7eb"/>
+
+    <g font-family="Arial, sans-serif">
+      <text x="842" y="481" font-size="12" font-weight="700" fill="#111827">Chrome for Developers</text>
+      <text x="842" y="499" font-size="10" fill="#667085">developer.chrome.com</text>
+      <rect x="1102" y="470" width="82" height="26" rx="13" fill="#eff6ff" stroke="#bfdbfe"/>
+      <text x="1143" y="487" text-anchor="middle" font-size="10" font-weight="700" fill="#1f3a8a">Technology</text>
+
+      <line x1="842" y1="518" x2="1184" y2="518" stroke="#e5e7eb"/>
+      <text x="842" y="548" font-size="12" font-weight="700" fill="#111827">Weeknight Pasta Recipe</text>
+      <text x="842" y="566" font-size="10" fill="#667085">example.com/recipe</text>
+      <rect x="1112" y="537" width="72" height="26" rx="13" fill="#eff6ff" stroke="#bfdbfe"/>
+      <text x="1148" y="554" text-anchor="middle" font-size="10" font-weight="700" fill="#1f3a8a">Recipes</text>
+
+      <line x1="842" y1="585" x2="1184" y2="585" stroke="#e5e7eb"/>
+      <text x="842" y="615" font-size="12" font-weight="700" fill="#111827">Interface Inspiration</text>
+      <text x="842" y="633" font-size="10" fill="#667085">example.com/design</text>
+      <rect x="1118" y="604" width="66" height="26" rx="13" fill="#eff6ff" stroke="#bfdbfe"/>
+      <text x="1151" y="621" text-anchor="middle" font-size="10" font-weight="700" fill="#1f3a8a">Design</text>
+    </g>
+
+    <text x="1013" y="724" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#667085">Bookmark data stays local. No API keys.</text>
+  </g>
+</svg>

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="fav">
+  <title id="fav">AI Bookmark Organizer</title>
+  <style>.b{fill:#0B6E66}.f{fill:#2DD4BF}@media(prefers-color-scheme:dark){.b{fill:#0F857A}.f{fill:#3FE0CC}}</style>
+  <path class="b" d="M16 16a8 8 0 0 1 8-8h54a8 8 0 0 1 8 8v88L51 80L16 104Z"/>
+  <path class="f" d="M42 32a8 8 0 0 1 8-8h54a8 8 0 0 1 8 8v88L77 96L42 120Z"/>
+</svg>

@@ -6,9 +6,9 @@
   --muted: #667085;
   --border: #e5e7eb;
   --border-strong: #d0d5dd;
-  --primary: #1f3a8a;
-  --primary-hover: #1d4ed8;
-  --primary-soft: #eff6ff;
+  --primary: #0B6E66;
+  --primary-hover: #0F857A;
+  --primary-soft: #E6F4F2;
   --success: #0f766e;
   --warning: #b45309;
   --danger: #b42318;
@@ -212,7 +212,7 @@ h2 {
   width: 0%;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--primary), #0f766e);
+  background: linear-gradient(90deg, var(--primary), #2DD4BF);
   transition: width 180ms ease;
 }
 

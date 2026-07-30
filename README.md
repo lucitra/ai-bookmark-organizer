@@ -1,163 +1,175 @@
 # AI Bookmark Organizer
 
-A Manifest V3 Chrome Extension that reads your existing Chrome bookmarks and
-organizes them locally with Chrome Built-in AI. It uses Chrome's on-device
-language model when available and falls back to `Uncategorized` when the local AI
-surface is not enabled.
+A local-first Manifest V3 Chrome extension for saving, organizing, and asking
+questions about Chrome bookmarks. Chrome Built-in AI runs on the device when
+available; deterministic local rules keep the core organizer usable without a
+cloud service.
 
 [Download the extension](https://lucitra.github.io/ai-bookmark-organizer/) ·
 [View the source](https://github.com/lucitra/ai-bookmark-organizer) ·
 [Read the privacy policy](https://lucitra.ai/tools/ai-bookmark-organizer/privacy/)
 
 > [!IMPORTANT]
-> This is an unpacked Chrome extension, not a bookmark or bookmarklet. It moves
-> bookmarks only after you review the preview and click **Apply Changes**.
+> This is a Chrome extension, not a bookmark or bookmarklet. It never reorganizes
+> bookmarks until you review the proposed moves and select **Apply selected**.
 
 ## What It Does
 
-- Reads bookmark titles and URLs using Chrome's bookmarks API.
-- Suggests one- or two-word folders with Chrome's on-device language model.
-- Shows every suggestion before changing your bookmarks.
-- Creates `Other bookmarks/AI Organized Bookmarks/<Category>` and moves the
-  approved bookmarks into those category folders.
-- Stores the latest completed preview locally so it can be restored if you close
-  the popup before applying it.
+- Saves the current page into a chosen bookmark folder, with an optional local
+  AI category suggestion.
+- Organizes all bookmarks or one selected folder using a collection-aware
+  category plan.
+- Accepts a plain-language organization instruction, such as “separate AI
+  infrastructure from design tools and learning resources.”
+- Checkpoints every completed batch so an interrupted scan can resume without
+  starting over.
+- Shows an editable category and a metadata-grounded reason for every proposed
+  move.
+- Moves only selected bookmarks and provides an undo action for the last apply.
+- Answers questions using saved titles, URLs, folder paths, and organizer
+  categories, with links back to relevant bookmarks.
 
-The extension does not use a cloud AI API, require an account, or need an API key.
-Chrome may download its on-device model the first time AI is used, but bookmark
-content is processed locally.
+The extension does not fetch bookmarked pages, use a cloud AI API, require an
+account, or need an API key. Chrome may download its on-device model the first
+time AI is used, but bookmark processing stays on the device.
 
-## Requirements
+## Install
 
-- Chrome 138 or newer on a supported desktop or Chromebook Plus device.
-- Enough free storage and memory for Chrome's built-in language model.
-- An unmetered connection for Chrome's initial model download.
+### Chrome Web Store
 
-Chrome documents the current operating-system, storage, and hardware requirements
-in [Get started with built-in AI](https://developer.chrome.com/docs/ai/get-started).
-The Prompt API is available to Chrome extensions from Chrome 138.
+The public listing is being prepared. Once approved, the store listing will be
+the recommended installation method and will provide a stable extension ID and
+automatic updates.
 
-## Install a Release From GitHub
+### Local release
 
 1. Open the
    [AI Bookmark Organizer download page](https://lucitra.github.io/ai-bookmark-organizer/).
-2. Select **Download latest release**.
-3. Unzip `ai-bookmark-organizer.zip`.
-4. In Chrome, open `chrome://extensions`.
-5. Turn on **Developer mode** in the top-right corner.
-6. Select **Load unpacked**.
-7. Select the unzipped folder that directly contains `manifest.json`.
-8. Open Chrome's extensions menu and pin **AI Bookmark Organizer** for easy
-   access.
+2. Download the latest release and unzip `ai-bookmark-organizer.zip`.
+3. Open `chrome://extensions`.
+4. Turn on **Developer mode**.
+5. Select **Load unpacked**.
+6. Select the unzipped directory that directly contains `manifest.json`.
+7. Pin **AI Bookmark Organizer** from Chrome’s extensions menu.
 
-Developers can clone the source repository instead:
-
-```bash
-git clone https://github.com/lucitra/ai-bookmark-organizer.git
-cd ai-bookmark-organizer
-```
-
-Then load that cloned folder in Chrome.
+Do not select the repository’s `dist/` directory: it contains release archives,
+not an unpacked extension. Developers should load the repository root.
 
 Managed Chrome installations may block unpacked extensions. A downloaded ZIP
-cannot bypass that policy. Install the Chrome Web Store release after it is
-approved, and ask the administrator to allow its extension ID if the store
-installation is also restricted.
+cannot bypass that policy. Install the Chrome Web Store release after approval,
+or ask the administrator to allow its extension ID.
 
-## Use the Organizer
+## Use
 
-1. Optional but recommended: export a bookmark backup from Chrome's Bookmark
-   Manager before the first run.
-2. Select the pinned **AI Bookmark Organizer** icon.
-3. Check the badge in the top-right:
-   - **AI Ready** means Chrome's local model can categorize bookmarks.
-   - **Fallback** means AI is unavailable. A scan will label every bookmark
-     `Uncategorized`; do not apply that preview unless that is what you want.
-4. Select **Scan & Organize Bookmarks** and keep the popup open while it scans.
-   The first run can take longer while Chrome downloads the local model.
-5. Review the category beside each bookmark in **Preview**.
-6. Select **Apply Changes** only when the suggestions look right.
-7. Open Chrome's Bookmark Manager and look under
-   `Other bookmarks/AI Organized Bookmarks`.
+### Save the current page
 
-The extension never deletes bookmarks. Applying a preview moves the bookmarks
-into the new category folders. If a bookmark is managed by policy or was removed
-after the scan, it may be skipped and the popup will report the skipped count.
+1. Open the page you want to save.
+2. Select the pinned extension icon.
+3. Choose the destination folder.
+4. Optionally enter a category or select **Suggest category**.
+5. Select **Save bookmark**.
 
-## If the Badge Shows Fallback
+The extension reads only the active tab’s title and URL after you open the
+popup. It does not read the page body.
 
-1. Update Chrome and confirm it is version 138 or newer.
-2. Confirm the computer meets
-   [Chrome's built-in AI requirements](https://developer.chrome.com/docs/ai/get-started#requirements).
-3. Open `chrome://on-device-internals`, then check **Model Status** for download
-   or model errors.
-4. Restart Chrome, reopen the extension, and scan again.
+### Organize a collection
 
-Chrome's Prompt API reports whether the model is `available`, `downloadable`,
-`downloading`, or `unavailable`. The extension starts a supported download after
-you click the scan button and shows its progress in the popup.
+1. Open the popup and select **Open organizer workspace**.
+2. Choose all bookmarks or one folder as the scan scope.
+3. Choose the destination root and maximum number of categories.
+4. Optionally describe the organization you want.
+5. Select **Plan and scan**. Large scopes require confirmation.
+6. Pause or close the workspace if needed. Reopening it offers the latest
+   completed checkpoint for resumption.
+7. Review every proposed move. Edit categories and deselect anything you do not
+   want moved.
+8. Select **Apply selected**.
 
-## Update the Extension
+Applied bookmarks move into
+`<destination root>/AI Organized Bookmarks/<Category>`. The extension never
+deletes bookmarks. **Undo last apply** moves bookmarks back to their recorded
+folders and leaves empty organizer folders in place.
 
-1. Pull the latest `main` branch or download and unzip the latest release.
-2. Open `chrome://extensions`.
-3. Select **Reload** on the **AI Bookmark Organizer** card.
+### Ask your bookmarks
 
-If the folder moved, remove the old unpacked extension and repeat the installation
-steps with the new folder.
+Open **Ask Bookmarks**, choose a scope, and ask questions such as:
 
-## Verify a Download
+- “What NVIDIA developer resources have I saved?”
+- “What are the largest themes in this collection?”
+- “Which bookmarks appear to be duplicates?”
 
-Every GitHub release includes `SHA256SUMS.txt` and GitHub build provenance. To
-compare a downloaded ZIP with the published checksum:
+Answers are grounded in bookmark metadata only. The extension does not claim to
+have read linked pages, and source links let you inspect the relevant bookmarks.
+
+## Local AI and fallback behavior
+
+AI Bookmark Organizer checks Chrome’s local AI APIs in this order:
+
+1. `LanguageModel`
+2. `window.ai.languageModel`
+3. `chrome.aiOriginTrial.languageModel`
+
+Chrome 138 or newer and supported hardware are required for the Prompt API.
+Chrome documents current requirements in
+[Get started with built-in AI](https://developer.chrome.com/docs/ai/get-started).
+
+If local AI is unavailable, the extension clearly shows **Fallback**. Quick-save
+and organization then use deterministic metadata rules. Bookmark Q&A returns
+the strongest metadata matches and category summary instead of a generated
+answer.
+
+## Privacy and permissions
+
+The packaged extension requests only:
+
+- `activeTab` — temporarily reads the current tab’s title and URL after the user
+  opens the extension so that page can be saved.
+- `bookmarks` — reads bookmark metadata, creates bookmarks and organizer
+  folders, and moves only user-approved bookmarks.
+- `storage` — saves scan checkpoints, editable previews, recent bookmark Q&A,
+  and the last undo record on the device.
+
+There are no host permissions, remote resources, remote code, background service
+worker, analytics, accounts, or network calls in the packaged extension.
+
+## Development
+
+See [DEV.md](./DEV.md) for the isolated Chrome profile workflow, deterministic
+tests, package checks, and release commands.
+
+To run the complete automated verification:
 
 ```bash
-shasum -a 256 ai-bookmark-organizer.zip
+node --test test/*.test.cjs
+node scripts/validate-extension.mjs
+./scripts/validate-release.sh
 ```
 
-The result must match the `ai-bookmark-organizer.zip` line in
-`SHA256SUMS.txt` for that release.
+The build uses the explicit allowlist in `release-files.txt`. CI builds the ZIP
+twice and rejects a non-reproducible or unexpected package.
 
-## Maintainer Release Process
+## Release process
 
-Pull requests and pushes to `main` build the exact Chrome Web Store ZIP twice and
-fail if the results differ. A release is published only from a semantic version
-tag whose version matches `manifest.json` and whose commit is contained in
-`main`.
-
-1. Update `manifest.json` with the next version.
-2. Merge the validated change into `main`.
-3. Create and push an annotated tag:
+1. Develop on a `codex/` or other feature branch.
+2. Run the complete automated verification and isolated Chrome QA.
+3. Update store copy, privacy disclosures, screenshots, and `SUBMISSION.md`.
+4. Merge the reviewed pull request into `main`.
+5. Tag the merged commit with the matching manifest version:
 
    ```bash
-   git tag -a v1.0.0 -m "AI Bookmark Organizer v1.0.0"
-   git push origin v1.0.0
+   git tag -a v1.1.0 -m "AI Bookmark Organizer v1.1.0"
+   git push origin v1.1.0
    ```
 
-The release workflow creates the package from an explicit runtime-file
-allowlist, publishes checksums and provenance, and then makes the completed
-release immutable. GitHub Pages always links to the latest published release.
+The release workflow publishes the exact allowlisted package, checksums, and
+build provenance. Do not move an existing version tag.
 
-## How It Works
+## Project files
 
-1. The popup checks for Chrome's local AI APIs in this order:
-   - `LanguageModel`
-   - `window.ai.languageModel`
-   - `chrome.aiOriginTrial.languageModel`
-2. It reads bookmarks with `chrome.bookmarks.getTree()`.
-3. It sends each bookmark title and URL to the local model with this prompt:
-
-   ```text
-   Given the bookmark title '{title}' and URL '{url}', respond with ONLY a 1 to 2 word general category folder name (e.g., Technology, Recipes, Finance, Productivity, Design, News). Do not add punctuation or extra words.
-   ```
-
-4. It previews the suggested folder names in the popup.
-5. When you click **Apply Changes**, it creates an `AI Organized Bookmarks`
-   folder and moves bookmarks into suggested category folders.
-
-## Project Files
-
-- `manifest.json` - Manifest V3 config with `bookmarks` and `storage` permissions.
-- `popup.html` - Extension popup UI.
-- `popup.css` - Local, dependency-free popup styling.
-- `popup.js` - Bookmark scanning, local AI categorization, preview, and apply logic.
+- `manifest.json` — Manifest V3 configuration and minimal permissions.
+- `shared.js` — local AI adapters, prompt boundaries, bookmark helpers, parsing,
+  and deterministic fallback logic.
+- `popup.*` — quick-save current-page experience.
+- `workspace.*` — persistent organizer and metadata-only bookmark Q&A.
+- `test/` — deterministic bookmark-tree fixtures and core tests.
+- `scripts/` — package policy validation and reproducible release build.

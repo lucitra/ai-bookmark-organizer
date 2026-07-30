@@ -14,3 +14,7 @@ The editable SVG sources are committed beside the exported PNG files.
 
 The padded store icon source is `store-assets/icon.svg`. The extension's
 production mark remains `brand/logo.svg`.
+
+`screenshot-1.png` captures the v1.0 interface and must not be submitted for
+v1.1. Capture replacement images from a real installed build after isolated
+Chrome QA; never fabricate or composite product screenshots.

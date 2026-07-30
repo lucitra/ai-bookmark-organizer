@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   validate:
-    name: Validate extension
+    name: Validate site and extension
     runs-on: ubuntu-latest
     steps:
       - name: Check out source

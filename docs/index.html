@@ -9,19 +9,37 @@
       content="Save, organize, and search Chrome bookmarks locally with Chrome Built-in AI."
     />
     <meta name="theme-color" content="#fcfdfd" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="AI Bookmark Organizer · Lucitra" />
+    <meta
+      property="og:description"
+      content="A local-first Chrome workspace for turning saved links into a useful library."
+    />
+    <meta
+      property="og:url"
+      content="https://lucitra.github.io/ai-bookmark-organizer/"
+    />
+    <link
+      rel="canonical"
+      href="https://lucitra.github.io/ai-bookmark-organizer/"
+    />
     <link rel="icon" href="./assets/icon-32.png" />
+    <link rel="stylesheet" href="./lucitra.css" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <header class="nav">
+    <header class="site-nav">
       <div class="wrap nav-inner">
-        <a class="brand" href="./">
-          <img src="./assets/icon-32.png" alt="" />
-          <span>Lucitra</span>
-        </a>
+        <div class="nav-brand">
+          <a class="company-word" href="https://lucitra.ai/">LUCITRA</a>
+          <span class="nav-rule" aria-hidden="true"></span>
+          <a class="product-crumb luci-mono" href="./">AI Bookmark Organizer</a>
+        </div>
         <nav class="nav-links" aria-label="Primary">
-          <a href="https://github.com/lucitra/ai-bookmark-organizer">Source</a>
+          <a href="#product">Product</a>
           <a href="https://lucitra.ai/tools/ai-bookmark-organizer/privacy/">Privacy</a>
+          <a href="https://github.com/lucitra/ai-bookmark-organizer">Source</a>
+          <a class="nav-cta" href="#install">Install</a>
         </nav>
       </div>
     </header>
@@ -29,17 +47,20 @@
     <main>
       <section class="hero">
         <div class="wrap hero-grid">
-          <div>
-            <p class="eyebrow">Free Chrome extension</p>
-            <h1>AI Bookmark Organizer</h1>
+          <div class="hero-copy">
+            <p class="eyebrow">Open-source Chrome extension</p>
+            <h1>
+              Turn a bookmark pile into a working
+              <span class="nowrap">library<span class="luci-caret" aria-hidden="true"></span></span>
+            </h1>
             <p class="lead">
-              Save the current page, organize a chosen bookmark collection, and
-              ask questions about links you already saved. Chrome’s on-device
-              AI keeps bookmark processing on your computer.
+              Capture the page you are on. Organize one folder or your full
+              collection. Ask questions across links you already saved—all with
+              local processing and a review before anything moves.
             </p>
-            <div class="actions">
+            <div class="hero-actions">
               <a
-                class="button"
+                class="button button-primary"
                 href="https://github.com/lucitra/ai-bookmark-organizer/releases/latest/download/ai-bookmark-organizer.zip"
                 download
               >
@@ -52,111 +73,271 @@
                 View source
               </a>
             </div>
-            <p class="microcopy">
-              Public source, versioned releases, and checksum-verifiable
-              downloads. Chrome Web Store release coming after review.
+            <p class="proof-line luci-mono">local / no account / no API key / reversible</p>
+          </div>
+
+          <div class="product-frame" aria-label="AI Bookmark Organizer workflow preview">
+            <div class="frame-titlebar">
+              <div class="window-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+              <span class="luci-mono">organizer.workspace</span>
+              <span class="frame-state luci-mono">AI READY</span>
+            </div>
+            <div class="frame-body">
+              <div class="frame-heading">
+                <div>
+                  <span class="frame-kicker luci-mono">SELECTED SCOPE</span>
+                  <strong>Research / AI infrastructure</strong>
+                </div>
+                <span class="frame-count luci-mono">32 bookmarks</span>
+              </div>
+              <div class="frame-progress">
+                <span style="width: 74%"></span>
+              </div>
+              <div class="frame-row">
+                <span class="row-caret is-live" aria-hidden="true"></span>
+                <div>
+                  <strong>GPU-optimized software</strong>
+                  <small class="luci-mono">catalog.ngc.nvidia.com</small>
+                </div>
+                <span class="row-category">AI infrastructure</span>
+              </div>
+              <div class="frame-row">
+                <span class="row-caret" aria-hidden="true"></span>
+                <div>
+                  <strong>Common workflows</strong>
+                  <small class="luci-mono">docs.anthropic.com</small>
+                </div>
+                <span class="row-category">Developer tools</span>
+              </div>
+              <div class="frame-row">
+                <span class="row-caret" aria-hidden="true"></span>
+                <div>
+                  <strong>Photonic computing</strong>
+                  <small class="luci-mono">lightmatter.co</small>
+                </div>
+                <span class="row-category">Deep tech</span>
+              </div>
+              <div class="frame-footer">
+                <span class="luci-mono">preview first</span>
+                <span class="frame-button">Apply selected</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="product" class="section product-section">
+        <div class="wrap">
+          <p class="eyebrow">One local workflow</p>
+          <div class="section-intro">
+            <h2>Capture, organize, and find things again.</h2>
+            <p>
+              The extension stays useful as a standalone bookmark tool. It does
+              not require a Lucitra account or turn every saved link into a CRM
+              record.
             </p>
           </div>
-
-          <aside class="install-card" aria-labelledby="install-title">
-            <img src="./assets/icon-128.png" alt="" />
-            <h2 id="install-title">Install locally</h2>
-            <p>Until the Chrome Web Store listing is approved:</p>
-            <ol class="steps">
-              <li>
-                <span class="step-number">1</span>
-                <p>Download and unzip the extension.</p>
-              </li>
-              <li>
-                <span class="step-number">2</span>
-                <p>Open <code>chrome://extensions</code>.</p>
-              </li>
-              <li>
-                <span class="step-number">3</span>
-                <p>Enable Developer mode.</p>
-              </li>
-              <li>
-                <span class="step-number">4</span>
-                <p>Select Load unpacked and choose the unzipped folder.</p>
-              </li>
-            </ol>
-          </aside>
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="wrap">
-          <p class="eyebrow">Review first</p>
-          <h2>Useful on capture. Careful at scale.</h2>
-          <p class="section-lead">
-            Quickly save the active page, or open a persistent workspace for a
-            folder-scoped scan. Every proposed category includes a reason and
-            remains editable before any bookmark is moved.
-          </p>
-          <div class="features">
+          <div class="feature-grid">
             <article class="feature">
-              <h3>Save and categorize</h3>
+              <span class="feature-number luci-mono">01</span>
+              <h3>Save the current page</h3>
               <p>
-                Save the current page into a chosen folder with an optional
-                local AI category suggestion.
+                Choose a destination, add a category, or let Chrome’s local
+                model suggest one. Only the active tab’s title and URL are read.
               </p>
             </article>
             <article class="feature">
-              <h3>Scoped, resumable scans</h3>
+              <span class="feature-number luci-mono">02</span>
+              <h3>Organize with context</h3>
               <p>
-                Organize one folder or the full collection, pause safely, and
-                resume from the latest completed checkpoint.
+                Select an explicit scope and describe the structure you want.
+                Large scans checkpoint in local batches and resume safely.
               </p>
             </article>
             <article class="feature">
+              <span class="feature-number luci-mono">03</span>
               <h3>Ask your bookmarks</h3>
               <p>
-                Get metadata-grounded answers with links back to the relevant
-                bookmarks. Linked pages are never fetched or read.
+                Search saved titles, URLs, folders, and organizer categories.
+                Answers link back to sources and never pretend to read the page.
               </p>
             </article>
           </div>
         </div>
       </section>
 
-      <section class="section">
-        <div class="wrap policy">
-          <h2>Private by design</h2>
+      <section class="section control-section">
+        <div class="wrap control-grid">
+          <div>
+            <p class="eyebrow">Human approval is the product</p>
+            <h2>Nothing moves until the preview makes sense.</h2>
+            <p class="section-copy">
+              Local AI creates a collection-aware category plan, but the user
+              owns the result. Every category is editable, every move is
+              selectable, and the last apply can be undone.
+            </p>
+          </div>
+          <div class="control-list">
+            <div>
+              <span class="control-mark luci-mono">PLAN</span>
+              <p>See the category structure before assignment begins.</p>
+            </div>
+            <div>
+              <span class="control-mark luci-mono">REVIEW</span>
+              <p>Inspect metadata-grounded reasons and edit any category.</p>
+            </div>
+            <div>
+              <span class="control-mark luci-mono">APPLY</span>
+              <p>Move only selected bookmarks into the chosen destination.</p>
+            </div>
+            <div>
+              <span class="control-mark luci-mono">UNDO</span>
+              <p>Return the last applied set to its recorded folders.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section privacy-section">
+        <div class="wrap">
+          <p class="eyebrow">Private by architecture</p>
+          <div class="section-intro">
+            <h2>Your research stays in your browser.</h2>
+            <p>
+              No cloud AI, analytics, remote code, host permissions, accounts,
+              trackers, or page-content collection.
+            </p>
+          </div>
+          <div class="privacy-grid">
+            <div>
+              <span class="privacy-label luci-mono">ACTIVE TAB</span>
+              <strong>Title + URL</strong>
+              <p>Read only after the user opens the extension to save a page.</p>
+            </div>
+            <div>
+              <span class="privacy-label luci-mono">BOOKMARKS</span>
+              <strong>Metadata + folders</strong>
+              <p>Read locally; changed only after explicit review and approval.</p>
+            </div>
+            <div>
+              <span class="privacy-label luci-mono">LOCAL STORAGE</span>
+              <strong>Checkpoints + undo</strong>
+              <p>Workspace state remains on the device and supports resumption.</p>
+            </div>
+          </div>
+          <a
+            class="text-link"
+            href="https://lucitra.ai/tools/ai-bookmark-organizer/privacy/"
+          >
+            Read the complete privacy policy <span aria-hidden="true">↗</span>
+          </a>
+        </div>
+      </section>
+
+      <section id="install" class="section install-section">
+        <div class="wrap install-grid">
+          <div>
+            <p class="eyebrow">Install the open-source release</p>
+            <h2>Use it locally while the Web Store listing is prepared.</h2>
+            <p class="section-copy">
+              GitHub releases are built from an explicit file allowlist, checked
+              twice for reproducibility, and published with SHA-256 checksums
+              and build provenance.
+            </p>
+            <div class="release-status luci-mono">
+              <span></span>
+              Chrome Web Store submission in preparation
+            </div>
+          </div>
+          <ol class="install-steps">
+            <li>
+              <span class="step-number luci-mono">1</span>
+              <p>Download and unzip the latest release.</p>
+            </li>
+            <li>
+              <span class="step-number luci-mono">2</span>
+              <p>Open <code>chrome://extensions</code>.</p>
+            </li>
+            <li>
+              <span class="step-number luci-mono">3</span>
+              <p>Enable Developer mode and choose <strong>Load unpacked</strong>.</p>
+            </li>
+            <li>
+              <span class="step-number luci-mono">4</span>
+              <p>Select the unzipped folder containing <code>manifest.json</code>.</p>
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="managed-notice">
+        <div class="wrap">
+          <span class="notice-label luci-mono">MANAGED CHROME</span>
           <p>
-            Active-tab and bookmark metadata is processed and stored locally.
-            The extension contains no cloud AI, analytics, or background
-            network service. Read the complete
-            <a href="https://lucitra.ai/tools/ai-bookmark-organizer/privacy/">
-              AI Bookmark Organizer Privacy Policy
-            </a>.
-          </p>
-          <p class="policy-links">
-            <a href="https://github.com/lucitra/ai-bookmark-organizer/releases">
-              Release history and checksums
-            </a>
-            <span aria-hidden="true">·</span>
-            <a href="https://github.com/lucitra/ai-bookmark-organizer/security">
-              Security policy
-            </a>
+            Your administrator may block unpacked extensions. A ZIP cannot
+            bypass policy; use the Chrome Web Store release after approval or
+            ask the administrator to allow its extension ID.
           </p>
         </div>
       </section>
 
-      <section class="notice">
-        <div class="wrap">
-          <strong>Managed Chrome devices:</strong>
-          An administrator may block unpacked extensions. The public download
-          cannot override that policy; use the Chrome Web Store release once it
-          is approved, and ask the administrator to allow its extension ID if
-          required.
+      <section class="closing">
+        <div class="wrap closing-inner">
+          <div>
+            <p class="eyebrow eyebrow-dark">Open source, local first</p>
+            <h2>
+              Make the links you saved useful
+              <span class="nowrap">again<span class="luci-caret" aria-hidden="true"></span></span>
+            </h2>
+          </div>
+          <div class="closing-actions">
+            <a
+              class="button button-dark-primary"
+              href="https://github.com/lucitra/ai-bookmark-organizer/releases/latest/download/ai-bookmark-organizer.zip"
+              download
+            >
+              Download extension
+            </a>
+            <a
+              class="button button-dark-secondary"
+              href="https://github.com/lucitra/ai-bookmark-organizer"
+            >
+              Inspect the source
+            </a>
+          </div>
         </div>
       </section>
     </main>
 
-    <footer class="footer">
-      <div class="wrap footer-inner">
-        <span>© 2026 Lucitra, Inc.</span>
-        <span>Chrome 138+ and supported hardware required for Built-in AI.</span>
+    <footer class="site-footer">
+      <div class="wrap footer-grid">
+        <div class="footer-brand">
+          <span class="footer-word">LUCITRA</span>
+          <p>
+            Research, design, and engineering for software people rely on.
+            Nothing goes live without a person saying yes.
+          </p>
+        </div>
+        <div class="footer-links">
+          <div>
+            <strong>Product</strong>
+            <a href="https://github.com/lucitra/ai-bookmark-organizer/releases">Releases</a>
+            <a href="https://github.com/lucitra/ai-bookmark-organizer/issues">Support</a>
+            <a href="https://github.com/lucitra/ai-bookmark-organizer">Source</a>
+          </div>
+          <div>
+            <strong>Lucitra</strong>
+            <a href="https://lucitra.ai/products/">Products</a>
+            <a href="https://lucitra.ai/trust/">Trust center</a>
+            <a href="https://lucitra.ai/about/">About</a>
+          </div>
+        </div>
+        <div class="footer-legal">
+          <span>© 2026 Lucitra, Inc.</span>
+          <a href="https://lucitra.ai/tools/ai-bookmark-organizer/privacy/">Privacy</a>
+          <a href="https://github.com/lucitra/ai-bookmark-organizer/security">Security</a>
+          <span class="luci-mono">the caret is the agent ▮</span>
+        </div>
       </div>
     </footer>
   </body>

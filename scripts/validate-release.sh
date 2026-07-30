@@ -11,6 +11,7 @@ cleanup() {
 trap cleanup EXIT
 
 node --test "${project_dir}"/test/*.test.cjs
+node "${project_dir}/scripts/validate-site.mjs"
 
 "${project_dir}/scripts/build-release.sh" > /dev/null
 

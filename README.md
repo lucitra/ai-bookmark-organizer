@@ -1,13 +1,24 @@
-# AI Bookmark Organizer
+<div align="center">
+  <img src="./docs/assets/icon-128.png" alt="" width="96" height="96" />
+  <h1>AI Bookmark Organizer</h1>
+  <p>
+    Save the page you are on. Turn a bookmark pile into a working library.
+    Ask questions across links you already saved.
+  </p>
+  <p>
+    <a href="https://lucitra.github.io/ai-bookmark-organizer/"><strong>Product and download</strong></a>
+    ·
+    <a href="https://lucitra.ai/tools/ai-bookmark-organizer/privacy/">Privacy</a>
+    ·
+    <a href="https://github.com/lucitra/ai-bookmark-organizer/issues">Support</a>
+  </p>
+  <p><code>local / no account / no API key / reversible</code></p>
+</div>
 
 A local-first Manifest V3 Chrome extension for saving, organizing, and asking
 questions about Chrome bookmarks. Chrome Built-in AI runs on the device when
-available; deterministic local rules keep the core organizer usable without a
+available; deterministic local rules keep the core organizer useful without a
 cloud service.
-
-[Download the extension](https://lucitra.github.io/ai-bookmark-organizer/) ·
-[View the source](https://github.com/lucitra/ai-bookmark-organizer) ·
-[Read the privacy policy](https://lucitra.ai/tools/ai-bookmark-organizer/privacy/)
 
 > [!IMPORTANT]
 > This is a Chrome extension, not a bookmark or bookmarklet. It never reorganizes
@@ -137,6 +148,10 @@ worker, analytics, accounts, or network calls in the packaged extension.
 See [DEV.md](./DEV.md) for the isolated Chrome profile workflow, deterministic
 tests, package checks, and release commands.
 
+Future relationship-workspace research is intentionally separate from the
+standalone extension. See [research/HUBSPOT.md](./research/HUBSPOT.md) for the
+bookmark-first object model and phased CRM recommendation.
+
 To run the complete automated verification:
 
 ```bash
@@ -167,9 +182,13 @@ build provenance. Do not move an existing version tag.
 ## Project files
 
 - `manifest.json` — Manifest V3 configuration and minimal permissions.
+- `lucitra.css` — shared Lucitra design foundations used by both extension
+  surfaces.
 - `shared.js` — local AI adapters, prompt boundaries, bookmark helpers, parsing,
   and deterministic fallback logic.
 - `popup.*` — quick-save current-page experience.
 - `workspace.*` — persistent organizer and metadata-only bookmark Q&A.
 - `test/` — deterministic bookmark-tree fixtures and core tests.
 - `scripts/` — package policy validation and reproducible release build.
+- `research/` — source-backed future product research, outside the current
+  extension scope.

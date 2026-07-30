@@ -1,2 +1,6 @@
 .DS_Store
 dist/
+
+# Internal design working files are archived outside the public repository.
+brand/claude/
+brand/CLAUDE_LOGO_BRIEF.md

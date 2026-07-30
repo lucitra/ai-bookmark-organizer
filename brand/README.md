@@ -10,5 +10,5 @@ bookmark, drawn as trimmed geometry rather than a stroke. On the ink app tile
 the fills lift to `#0F857A` and `#3FE0CC` so they clear the dark field.
 
 Extension icons under `icons/` use the bare mark at 16 and 32 px and the app
-tile at 48 and 128 px. Full artwork, alternates and the design rationale are in
-`brand/claude/`.
+tile at 48 and 128 px. The public repository contains only the production
+artwork; the design exploration archive is maintained separately.

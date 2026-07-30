@@ -9,71 +9,82 @@
   <body>
     <main class="app-shell">
       <header class="header">
-        <div>
-          <p class="eyebrow">Local Chrome AI</p>
-          <h1>AI Bookmark Organizer</h1>
+        <div class="brand-lockup">
+          <img src="icons/icon-32.png" alt="" width="32" height="32" />
+          <div>
+            <p class="eyebrow">Local Chrome AI</p>
+            <h1>Save this page</h1>
+          </div>
         </div>
         <span id="aiBadge" class="badge badge-muted">Checking</span>
       </header>
 
-      <section class="panel">
-        <p class="intro">
-          Scan your bookmarks, preview suggested folders, then apply the changes when
-          they look right. Bookmark titles and URLs stay on this device.
-        </p>
+      <section class="capture-card" aria-labelledby="captureTitle">
+        <h2 id="captureTitle" class="visually-hidden">Bookmark details</h2>
 
-        <div class="actions">
-          <button id="scanButton" class="button button-primary" type="button">
-            Scan &amp; Organize Bookmarks
+        <label class="field">
+          <span>Title</span>
+          <input id="bookmarkTitle" type="text" maxlength="300" autocomplete="off" />
+        </label>
+
+        <label class="field">
+          <span>URL</span>
+          <input id="bookmarkUrl" type="url" readonly />
+        </label>
+
+        <div class="field-grid">
+          <label class="field">
+            <span>Save under</span>
+            <select id="destinationFolder"></select>
+          </label>
+
+          <label class="field">
+            <span>Category</span>
+            <input
+              id="bookmarkCategory"
+              type="text"
+              maxlength="60"
+              placeholder="Optional folder"
+              autocomplete="off"
+            />
+          </label>
+        </div>
+
+        <div class="capture-actions">
+          <button id="suggestButton" class="button button-secondary" type="button">
+            Suggest category
           </button>
-          <button id="applyButton" class="button button-secondary" type="button" disabled>
-            Apply Changes
+          <button id="saveButton" class="button button-primary" type="button">
+            Save bookmark
           </button>
         </div>
 
         <div class="status-card" aria-live="polite">
-          <div class="status-row">
-            <span id="statusDot" class="status-dot"></span>
-            <span id="statusText">Checking if Chrome Built-in AI is available...</span>
-          </div>
-          <div class="progress-track" aria-hidden="true">
-            <div id="progressBar" class="progress-bar"></div>
-          </div>
+          <span id="statusDot" class="status-dot"></span>
+          <span id="statusText">Reading the current tab…</span>
         </div>
       </section>
 
-      <section class="preview-section" aria-labelledby="previewTitle">
-        <div class="preview-heading">
-          <h2 id="previewTitle">Preview</h2>
-          <span id="previewCount" class="preview-count">0 bookmarks</span>
-        </div>
-        <div id="emptyState" class="empty-state">
-          Suggestions will appear here before anything is changed.
-        </div>
-        <ul id="previewList" class="preview-list"></ul>
-      </section>
+      <a class="workspace-link" href="workspace.html" target="_blank">
+        <span>
+          <strong>Open Organizer Workspace</strong>
+          <small>Organize, resume scans, and ask about bookmarks</small>
+        </span>
+        <span aria-hidden="true">→</span>
+      </a>
 
       <footer class="footer">
-        <span>Bookmark data stays local. No API keys.</span>
-        <a
-          class="footer-link"
-          href="https://github.com/lucitra/ai-bookmark-organizer"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <span>Titles, URLs, and AI processing stay local.</span>
+        <a href="https://github.com/lucitra/ai-bookmark-organizer" target="_blank" rel="noopener noreferrer">
           Source
         </a>
-        <a
-          class="footer-link"
-          href="https://lucitra.ai/tools/ai-bookmark-organizer/privacy/"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <a href="https://lucitra.ai/tools/ai-bookmark-organizer/privacy/" target="_blank" rel="noopener noreferrer">
           Privacy
         </a>
       </footer>
     </main>
 
-    <script src="popup.js" defer></script>
+    <script src="shared.js"></script>
+    <script src="popup.js"></script>
   </body>
 </html>

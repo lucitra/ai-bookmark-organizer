@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Organizer Workspace · AI Bookmark Organizer</title>
+    <link rel="stylesheet" href="workspace.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="workspace.html" aria-label="AI Bookmark Organizer workspace">
+        <img src="icons/icon-32.png" alt="" width="32" height="32" />
+        <span>
+          <strong>AI Bookmark Organizer</strong>
+          <small>Local workspace</small>
+        </span>
+      </a>
+      <div class="topbar-actions">
+        <span id="aiBadge" class="badge badge-muted">Checking AI</span>
+        <a href="https://github.com/lucitra/ai-bookmark-organizer" target="_blank" rel="noopener noreferrer">
+          Source
+        </a>
+        <a
+          href="https://lucitra.ai/tools/ai-bookmark-organizer/privacy/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Privacy
+        </a>
+      </div>
+    </header>
+
+    <div class="workspace-shell">
+      <aside class="sidebar" aria-label="Workspace navigation">
+        <button class="nav-button is-active" type="button" data-view="organizeView">
+          <span class="nav-icon" aria-hidden="true">◎</span>
+          <span>
+            <strong>Organize</strong>
+            <small>Plan, preview, apply</small>
+          </span>
+        </button>
+        <button class="nav-button" type="button" data-view="askView">
+          <span class="nav-icon" aria-hidden="true">?</span>
+          <span>
+            <strong>Ask Bookmarks</strong>
+            <small>Metadata-grounded answers</small>
+          </span>
+        </button>
+
+        <div class="privacy-note">
+          <strong>Local by design</strong>
+          <span>No cloud AI, accounts, tracking, or page-content collection.</span>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <section id="organizeView" class="workspace-view" aria-labelledby="organizeTitle">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">Standalone bookmark workspace</p>
+              <h1 id="organizeTitle">Organize with context and control.</h1>
+              <p>
+                Choose an explicit scope, describe the structure you want, then review every
+                proposed move. Closing this page pauses safely at the latest checkpoint.
+              </p>
+            </div>
+            <button id="undoButton" class="button button-secondary" type="button" hidden>
+              Undo last apply
+            </button>
+          </div>
+
+          <section class="card setup-card" aria-labelledby="setupTitle">
+            <div class="section-heading">
+              <div>
+                <p class="step-label">Step 1</p>
+                <h2 id="setupTitle">Choose what to organize</h2>
+              </div>
+              <span id="scopeCount" class="count-label">Choose a scope</span>
+            </div>
+
+            <div class="setup-grid">
+              <label class="field">
+                <span>Bookmark scope</span>
+                <select id="scopeSelect">
+                  <option value="">Choose a folder or all bookmarks…</option>
+                  <option value="all">All bookmarks</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Destination root</span>
+                <select id="destinationSelect"></select>
+              </label>
+
+              <label class="field">
+                <span>Maximum planned categories</span>
+                <select id="categoryLimit">
+                  <option value="6">6 categories</option>
+                  <option value="8" selected>8 categories</option>
+                  <option value="10">10 categories</option>
+                  <option value="12">12 categories</option>
+                </select>
+              </label>
+
+              <label class="check-field">
+                <input id="excludeOrganizer" type="checkbox" checked />
+                <span>
+                  <strong>Skip previously organized bookmarks</strong>
+                  <small>Excludes bookmarks already inside AI Organized Bookmarks.</small>
+                </span>
+              </label>
+            </div>
+
+            <label class="field">
+              <span>Organization instruction</span>
+              <textarea
+                id="instructionInput"
+                rows="3"
+                maxlength="500"
+                placeholder="Example: Separate AI tools, developer infrastructure, learning resources, design, finance, and research. Prefer specific categories over Technology."
+              ></textarea>
+            </label>
+
+            <div class="action-row">
+              <button id="startButton" class="button button-primary" type="button" disabled>
+                Plan and scan
+              </button>
+              <button id="pauseButton" class="button button-secondary" type="button" disabled>
+                Pause
+              </button>
+              <button id="resumeButton" class="button button-secondary" type="button" disabled>
+                Resume
+              </button>
+              <button id="cancelButton" class="button button-quiet" type="button" disabled>
+                Cancel
+              </button>
+            </div>
+
+            <div class="job-status" aria-live="polite">
+              <div class="status-copy">
+                <span id="statusDot" class="status-dot"></span>
+                <span id="statusText">Choose a scope to begin.</span>
+              </div>
+              <span id="progressLabel">0%</span>
+              <div class="progress-track" aria-hidden="true">
+                <div id="progressBar" class="progress-bar"></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card plan-card" aria-labelledby="planTitle">
+            <div class="section-heading">
+              <div>
+                <p class="step-label">Step 2</p>
+                <h2 id="planTitle">Category plan</h2>
+              </div>
+              <span id="planCount" class="count-label">Not planned</span>
+            </div>
+            <div id="categoryPlan" class="category-plan empty-copy">
+              Categories will appear here before bookmark assignment begins.
+            </div>
+          </section>
+
+          <section class="card preview-card" aria-labelledby="previewTitle">
+            <div class="section-heading preview-toolbar">
+              <div>
+                <p class="step-label">Step 3</p>
+                <h2 id="previewTitle">Review proposed moves</h2>
+              </div>
+              <div class="preview-actions">
+                <label class="select-all">
+                  <input id="selectAll" type="checkbox" checked />
+                  <span>Select all</span>
+                </label>
+                <span id="previewCount" class="count-label">0 suggestions</span>
+                <button id="applyButton" class="button button-primary" type="button" disabled>
+                  Apply selected
+                </button>
+              </div>
+            </div>
+
+            <div id="previewEmpty" class="preview-empty">
+              Start a scoped scan to see editable categories and metadata-grounded reasons.
+            </div>
+            <div id="previewList" class="preview-list" aria-live="polite"></div>
+            <datalist id="categoryOptions"></datalist>
+          </section>
+        </section>
+
+        <section id="askView" class="workspace-view" aria-labelledby="askTitle" hidden>
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">Metadata-grounded local AI</p>
+              <h1 id="askTitle">Ask your bookmarks.</h1>
+              <p>
+                Answers use saved titles, URLs, folder paths, and organizer categories. The
+                extension does not fetch or read the linked webpages.
+              </p>
+            </div>
+          </div>
+
+          <section class="card ask-card">
+            <div class="ask-controls">
+              <label class="field">
+                <span>Search scope</span>
+                <select id="askScopeSelect">
+                  <option value="all">All bookmarks</option>
+                </select>
+              </label>
+              <label class="field ask-field">
+                <span>Question</span>
+                <textarea
+                  id="questionInput"
+                  rows="2"
+                  maxlength="600"
+                  placeholder="What NVIDIA developer resources have I saved?"
+                ></textarea>
+              </label>
+              <button id="askButton" class="button button-primary" type="button">Ask locally</button>
+            </div>
+
+            <div class="suggested-questions" aria-label="Suggested questions">
+              <button type="button" data-question="What are the main themes in my bookmarks?">
+                Main themes
+              </button>
+              <button type="button" data-question="Which bookmarks appear to be duplicates?">
+                Possible duplicates
+              </button>
+              <button type="button" data-question="Which topics have the most bookmarks?">
+                Largest topics
+              </button>
+            </div>
+
+            <div id="chatMessages" class="chat-messages">
+              <div class="chat-empty">
+                Ask a question to receive an answer with links back to relevant bookmarks.
+              </div>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script src="shared.js"></script>
+    <script src="workspace.js"></script>
+  </body>
+</html>

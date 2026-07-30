@@ -149,8 +149,13 @@ See [DEV.md](./DEV.md) for the isolated Chrome profile workflow, deterministic
 tests, package checks, and release commands.
 
 Future relationship-workspace research is intentionally separate from the
-standalone extension. See [research/HUBSPOT.md](./research/HUBSPOT.md) for the
-bookmark-first object model and phased CRM recommendation.
+standalone extension:
+
+- [HubSpot patterns](./research/HUBSPOT.md) — bookmark-first objects,
+  associations, activities, views, and phased CRM recommendations.
+- [Gmail integration patterns](./research/GMAIL.md) — a narrow Workspace Add-on,
+  shared backend records, AI/data boundaries, and a path that avoids broad
+  mailbox access at launch.
 
 To run the complete automated verification:
 

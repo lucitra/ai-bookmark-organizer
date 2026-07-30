@@ -110,3 +110,78 @@ test('marks bookmark metadata as untrusted in every AI prompt', () => {
   )
   assert.match(Organizer.buildQuestionPrompt('What did I save?', [bookmark]), /untrusted data/i)
 })
+
+test('uses the expected Chrome callback API contracts', async () => {
+  const storage = {}
+  const children = [{ id: 'existing', title: 'Research' }]
+  const calls = []
+
+  global.chrome = {
+    runtime: { lastError: null },
+    storage: {
+      local: {
+        get(key, callback) {
+          calls.push(['storage.get', key])
+          callback({ [key]: storage[key] })
+        },
+        set(value, callback) {
+          calls.push(['storage.set', value])
+          Object.assign(storage, value)
+          callback()
+        },
+        remove(key, callback) {
+          calls.push(['storage.remove', key])
+          delete storage[key]
+          callback()
+        },
+      },
+    },
+    bookmarks: {
+      getChildren(parentId, callback) {
+        calls.push(['bookmarks.getChildren', parentId])
+        callback(children)
+      },
+      create(details, callback) {
+        calls.push(['bookmarks.create', details])
+        callback({ id: 'created', ...details })
+      },
+      move(id, destination, callback) {
+        calls.push(['bookmarks.move', id, destination])
+        callback({ id, ...destination })
+      },
+      search(query, callback) {
+        calls.push(['bookmarks.search', query])
+        callback([])
+      },
+    },
+    tabs: {
+      query(query, callback) {
+        calls.push(['tabs.query', query])
+        callback([{ id: 4, title: 'QA page', url: 'https://example.com/' }])
+      },
+    },
+  }
+
+  await Organizer.writeStorage('job', { status: 'paused' })
+  assert.deepEqual(await Organizer.readStorage('job'), { status: 'paused' })
+  await Organizer.removeStorage('job')
+  assert.equal(await Organizer.readStorage('job'), undefined)
+
+  assert.equal((await Organizer.findOrCreateFolder('2', 'Research')).id, 'existing')
+  assert.equal((await Organizer.findOrCreateFolder('2', 'Design')).id, 'created')
+  assert.equal(
+    (await Organizer.createBookmark({
+      parentId: '2',
+      title: 'QA page',
+      url: 'https://example.com/',
+    })).id,
+    'created',
+  )
+  assert.equal((await Organizer.moveBookmark('101', { parentId: '2' })).parentId, '2')
+  assert.deepEqual(await Organizer.searchBookmarks({ url: 'https://example.com/' }), [])
+  assert.equal((await Organizer.queryTabs({ active: true, currentWindow: true }))[0].id, 4)
+
+  assert.ok(calls.some(([name]) => name === 'bookmarks.create'))
+  assert.ok(calls.some(([name]) => name === 'bookmarks.move'))
+  delete global.chrome
+})

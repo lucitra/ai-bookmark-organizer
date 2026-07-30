@@ -1,16 +1,42 @@
-# Chrome Web Store Listing
+# Chrome Web Store Submission — v1.1.0
 
-## Product Details
+Work down this page in order. Values below match `STORE_LISTING.md`.
 
-**Name:** AI Bookmark Organizer
+## Release gate
 
-**Summary:** Save, organize, and search Chrome bookmarks locally with Chrome Built-in AI.
+- **Package:** `dist/ai-bookmark-organizer-1.1.0.zip`
+- **Manifest version:** `1.1.0`
+- **Visibility:** Public
+- **BLOCKED — privacy page content:** The URL returns HTTP 200, but the live
+  policy still describes v1.0. Update it to match `PRIVACY.md`, including
+  `activeTab`, current-page capture, checkpoints, Q&A history, and undo state.
+- **BLOCKED — screenshots:** `store-assets/screenshot-1.png` is a real v1.0
+  capture. Replace it with real v1.1 captures of the quick-save popup,
+  populated organizer preview, Ask Bookmarks with sources, and resulting
+  `chrome://bookmarks` folder structure.
 
-**Category:** Productivity
+Do not upload the package until both BLOCKED items are cleared and isolated
+Chrome QA passes.
 
-**Language:** English
+## Store listing
 
-**Detailed description:**
+**Name**
+
+AI Bookmark Organizer
+
+**Summary**
+
+Save, organize, and search Chrome bookmarks locally with Chrome Built-in AI.
+
+**Category**
+
+Productivity
+
+**Language**
+
+English
+
+**Detailed description**
 
 AI Bookmark Organizer is a local-first workspace for saving pages, organizing
 bookmark collections, and finding useful links again.
@@ -45,65 +71,88 @@ Fallback and uses deterministic metadata rules.
 
 ## URLs
 
-**Homepage:** https://lucitra.github.io/ai-bookmark-organizer/
+**Homepage URL**
 
-**Support:** https://github.com/lucitra/ai-bookmark-organizer/issues
+https://lucitra.github.io/ai-bookmark-organizer/
 
-**Privacy policy:** https://lucitra.ai/tools/ai-bookmark-organizer/privacy/
+**Support URL**
 
-## Single Purpose
+https://github.com/lucitra/ai-bookmark-organizer/issues
+
+**Privacy policy URL**
+
+https://lucitra.ai/tools/ai-bookmark-organizer/privacy/
+
+## Privacy practices
+
+**Single purpose**
 
 Save, categorize, reorganize, and search a user's Chrome bookmarks locally,
 while keeping the user in control of every bookmark change.
 
-## Permission Justifications
-
-**activeTab**
+**Permission justification — activeTab**
 
 Temporarily reads the title and URL of the current tab after the user opens the
 extension, so the page can be saved as a bookmark. Access is limited to that
 user gesture; the extension does not read page content.
 
-**bookmarks**
+**Permission justification — bookmarks**
 
 Reads bookmark titles, URLs, and folder structure to build category suggestions
 and answer metadata-based questions. Creates bookmarks and organizer folders,
 and moves bookmarks only after the user reviews and approves the selected
 changes. The extension never deletes bookmarks.
 
-**storage**
+**Permission justification — storage**
 
 Stores scan checkpoints, category plans, editable previews, recent bookmark
 questions and answers, and the last apply record in `chrome.storage.local`.
 This lets the user resume interrupted work and undo the most recent bookmark
 moves. The data remains on the device.
 
-## Privacy Practices
+**Remote code**
 
-- The extension does not contain remote code.
-- The extension does not request host permissions.
-- The extension does not fetch or read bookmarked webpages.
-- The extension does not transmit active-tab or bookmark data off the device.
-- The developer does not collect user data through the extension.
-- Bookmark and active-tab data are used only for the extension's stated single
-  purpose.
-- Data is not sold, shared, or used for advertising, profiling, credit, or
-  lending decisions.
+No, I am not using remote code.
+
+**Data collected**
+
+No user data is collected by the developer.
+
+**Data-use certifications**
+
+- Data is not sold to third parties.
+- Data is not used or transferred for purposes unrelated to the extension's
+  single purpose.
+- Data is not used or transferred to determine creditworthiness or for lending.
 - The extension complies with the Chrome Web Store Limited Use requirements.
-
-When the dashboard distinguishes between local access and developer collection,
-select **no data collected** and describe the local active-tab and bookmark
-access in the permission justifications and privacy policy.
 
 ## Distribution
 
-Recommended release: **Public**.
+**Visibility**
 
-Use the ZIP produced by the tagged GitHub release. The published GitHub release
-is immutable and contains the same versioned package, checksums, and build
-provenance used for the Chrome Web Store submission.
+Public
 
-## Reviewer Test Instructions
+**Regions**
+
+All regions offered by the Chrome Web Store.
+
+**Pricing**
+
+Free
+
+## Graphic assets
+
+| Dashboard field | File | Dimensions | Status |
+| --- | --- | ---: | --- |
+| Store icon | `store-assets/icon-128.png` | 128×128 PNG | Ready |
+| Screenshot 1 | `store-assets/screenshot-1.png` | 1280×800 PNG | BLOCKED — v1.0 UI |
+| Small promo tile | `store-assets/small-promo.png` | 440×280 PNG | Ready |
+| Marquee promo tile | `store-assets/marquee.png` | 1400×560 PNG | Ready, optional |
+
+Capture replacement screenshots at exactly 1280×800 with square corners and
+full bleed. Do not fabricate or composite product UI.
+
+## Reviewer test instructions
 
 1. Install the extension in Chrome 138 or newer.
 2. Open an ordinary HTTPS page, open AI Bookmark Organizer, and confirm its

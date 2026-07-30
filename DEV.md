@@ -32,6 +32,7 @@ functional test.
    node --check workspace.js
    node --test test/*.test.cjs
    node scripts/validate-extension.mjs
+   node scripts/validate-site.mjs
    ```
 
 3. Reload the unpacked extension.
@@ -63,6 +64,11 @@ functional test.
 - network APIs, dynamic imports, `eval`, or `new Function`;
 - missing, extra, traversing, or symlinked package paths;
 - icon dimension mismatches.
+
+`lucitra.css` is the packaged design-system foundation. `docs/lucitra.css`
+mirrors those tokens for GitHub Pages, and `scripts/validate-site.mjs` rejects
+token drift, remote runtime assets, duplicate IDs, missing product links, and
+key text-color combinations below WCAG AA contrast.
 
 Adding a permission, dependency, remote resource, or background execution model
 requires an explicit product/privacy review before implementation.

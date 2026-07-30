@@ -104,6 +104,7 @@ for (const relativePath of releaseFiles) {
 
 const requiredPackageFiles = [
   'manifest.json',
+  'lucitra.css',
   'shared.js',
   'popup.html',
   'popup.css',
@@ -127,12 +128,33 @@ for (const [size, relativePath] of Object.entries(expectedIcons)) {
 }
 
 const extensionPages = new Map([
-  ['popup.html', { scripts: ['shared.js', 'popup.js'], source: 'popup.js' }],
-  ['workspace.html', { scripts: ['shared.js', 'workspace.js'], source: 'workspace.js' }],
+  [
+    'popup.html',
+    {
+      styles: ['lucitra.css', 'popup.css'],
+      scripts: ['shared.js', 'popup.js'],
+      source: 'popup.js',
+    },
+  ],
+  [
+    'workspace.html',
+    {
+      styles: ['lucitra.css', 'workspace.css'],
+      scripts: ['shared.js', 'workspace.js'],
+      source: 'workspace.js',
+    },
+  ],
 ])
 
 for (const [pagePath, page] of extensionPages) {
   const html = readText(pagePath)
+  const stylesheetLinks = [
+    ...html.matchAll(/<link\b[^>]*\brel=["']stylesheet["'][^>]*\bhref=["']([^"']+)["'][^>]*>/gi),
+  ]
+  assert(
+    JSON.stringify(stylesheetLinks.map((match) => match[1])) === JSON.stringify(page.styles),
+    `${pagePath} must load only ${page.styles.join(' followed by ')}`,
+  )
   const scriptTags = [
     ...html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*>\s*<\/script>/gi),
   ]
@@ -183,6 +205,14 @@ for (const relativePath of runtimeScripts) {
   for (const [pattern, label] of prohibitedRuntimePatterns) {
     assert(!pattern.test(source), `${label} is not allowed in ${relativePath}`)
   }
+}
+
+for (const relativePath of ['lucitra.css', 'popup.css', 'workspace.css']) {
+  const source = readText(relativePath)
+  assert(
+    !/@import\b|url\(\s*["']?(?:https?:)?\/\//i.test(source),
+    `remote CSS resources are not allowed in ${relativePath}`,
+  )
 }
 
 console.log(`Validated AI Bookmark Organizer ${manifest.version}`)

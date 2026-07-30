@@ -4,17 +4,25 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Organizer Workspace · AI Bookmark Organizer</title>
+    <link rel="stylesheet" href="lucitra.css" />
     <link rel="stylesheet" href="workspace.css" />
   </head>
   <body>
     <header class="topbar">
-      <a class="brand" href="workspace.html" aria-label="AI Bookmark Organizer workspace">
-        <img src="icons/icon-32.png" alt="" width="32" height="32" />
-        <span>
-          <strong>AI Bookmark Organizer</strong>
-          <small>Local workspace</small>
-        </span>
-      </a>
+      <div class="brand-lockup">
+        <a
+          class="company-brand"
+          href="https://lucitra.ai/"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Lucitra home"
+        >LUCITRA</a>
+        <span class="brand-rule" aria-hidden="true"></span>
+        <a class="product-brand" href="workspace.html">
+          <img src="icons/icon-32.png" alt="" width="28" height="28" />
+          <span>AI Bookmark Organizer</span>
+        </a>
+      </div>
       <div class="topbar-actions">
         <span id="aiBadge" class="badge badge-muted">Checking AI</span>
         <a href="https://github.com/lucitra/ai-bookmark-organizer" target="_blank" rel="noopener noreferrer">
@@ -48,7 +56,7 @@
         </button>
 
         <div class="privacy-note">
-          <strong>Local by design</strong>
+          <strong class="luci-mono">local / private / reversible</strong>
           <span>No cloud AI, accounts, tracking, or page-content collection.</span>
         </div>
       </aside>
@@ -58,7 +66,9 @@
           <div class="page-heading">
             <div>
               <p class="eyebrow">Standalone bookmark workspace</p>
-              <h1 id="organizeTitle">Organize with context and control.</h1>
+              <h1 id="organizeTitle">
+                Your bookmarks, made legible<span class="luci-caret" aria-hidden="true"></span>
+              </h1>
               <p>
                 Choose an explicit scope, describe the structure you want, then review every
                 proposed move. Closing this page pauses safely at the latest checkpoint.
@@ -191,7 +201,9 @@
           <div class="page-heading">
             <div>
               <p class="eyebrow">Metadata-grounded local AI</p>
-              <h1 id="askTitle">Ask your bookmarks.</h1>
+              <h1 id="askTitle">
+                Ask your bookmarks<span class="luci-caret" aria-hidden="true"></span>
+              </h1>
               <p>
                 Answers use saved titles, URLs, folder paths, and organizer categories. The
                 extension does not fetch or read the linked webpages.

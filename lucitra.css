@@ -1,0 +1,84 @@
+:root {
+  color-scheme: light;
+
+  /* Lucitra brand foundations */
+  --luci-ink: #111824;
+  --luci-ink-2: #344054;
+  --luci-ink-dark: #e2e8f0;
+  --luci-dim: #5a6678;
+  --luci-faint: #626d84;
+  --luci-ghost: #6b7689;
+  --luci-ghost-dark: #98a5b6;
+  --luci-paper: #ffffff;
+  --luci-paper-high: #fcfdfd;
+  --luci-paper-low: #f1f5f5;
+  --luci-tile: #181d26;
+  --luci-instrument: #0e1116;
+  --luci-teal: #0d9488;
+  --luci-teal-deep: #0b6e66;
+  --luci-teal-bright: #2dd4bf;
+  --luci-amber: #b47914;
+  --luci-danger: #c83a44;
+  --luci-on-teal: var(--luci-ink);
+
+  /* Derived semantic tokens */
+  --luci-line: color-mix(in srgb, var(--luci-ink) 10%, transparent);
+  --luci-line-strong: color-mix(in srgb, var(--luci-ink) 16%, transparent);
+  --luci-line-dark: color-mix(in srgb, var(--luci-ink-dark) 9%, transparent);
+  --luci-teal-soft: color-mix(in srgb, var(--luci-teal) 8%, var(--luci-paper));
+  --luci-held-soft: color-mix(in srgb, var(--luci-amber) 9%, var(--luci-paper));
+
+  /* Shared type and geometry */
+  --luci-font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
+  --luci-font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+  --luci-radius-xs: 4px;
+  --luci-radius-sm: 8px;
+  --luci-radius-md: 12px;
+  --luci-radius-lg: 16px;
+  --luci-radius-xl: 24px;
+  --luci-shadow-instrument: 0 40px 90px -30px
+    color-mix(in srgb, var(--luci-ink) 40%, transparent);
+  --luci-ready-duration: 1.15s;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+.luci-mono {
+  font-family: var(--luci-font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.luci-caret {
+  display: inline-block;
+  width: 0.42em;
+  height: 0.84em;
+  margin-left: 0.12em;
+  border-radius: 0.08em;
+  background: var(--luci-teal);
+  vertical-align: -0.05em;
+  animation: luci-ready var(--luci-ready-duration) steps(1) infinite;
+}
+
+@keyframes luci-ready {
+  0%,
+  49% {
+    opacity: 1;
+  }
+
+  50%,
+  100% {
+    opacity: 0.18;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .luci-caret {
+    animation: none;
+  }
+}

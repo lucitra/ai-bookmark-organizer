@@ -10,6 +10,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
+node --test "${project_dir}"/test/*.test.cjs
+
 "${project_dir}/scripts/build-release.sh" > /dev/null
 
 manifest_version="$(

@@ -48,14 +48,18 @@ assert(
 )
 assert(Number(manifest.minimum_chrome_version) >= 138, 'minimum_chrome_version must be at least 138')
 assert(manifest.action?.default_popup === 'popup.html', 'action.default_popup must be popup.html')
+assert(!manifest.background, 'background pages and service workers are not allowed')
+assert(!manifest.content_scripts, 'content scripts are not allowed')
+assert(!manifest.externally_connectable, 'external extension connections are not allowed')
 assert(!manifest.host_permissions, 'host_permissions are not allowed for this extension')
 assert(!manifest.optional_host_permissions, 'optional_host_permissions are not allowed for this extension')
+assert(!manifest.optional_permissions, 'optional permissions are not allowed for this extension')
 assert(!manifest.update_url, 'update_url must be supplied by Chrome Web Store, not the source manifest')
 
 const permissions = sorted(manifest.permissions || [])
 assert(
-  JSON.stringify(permissions) === JSON.stringify(['bookmarks', 'storage']),
-  'permissions must be limited to bookmarks and storage',
+  JSON.stringify(permissions) === JSON.stringify(['activeTab', 'bookmarks', 'storage']),
+  'permissions must be limited to activeTab, bookmarks, and storage',
 )
 
 const expectedIcons = {
@@ -100,9 +104,13 @@ for (const relativePath of releaseFiles) {
 
 const requiredPackageFiles = [
   'manifest.json',
+  'shared.js',
   'popup.html',
   'popup.css',
   'popup.js',
+  'workspace.html',
+  'workspace.css',
+  'workspace.js',
   ...Object.values(expectedIcons),
 ]
 assert(
@@ -118,14 +126,45 @@ for (const [size, relativePath] of Object.entries(expectedIcons)) {
   )
 }
 
-const popupHtml = readText('popup.html')
-const scriptTags = [...popupHtml.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*>\s*<\/script>/gi)]
-assert(scriptTags.length === 1, 'popup.html must load exactly one external script')
-assert(scriptTags[0][1] === 'popup.js', 'popup.html may load only popup.js')
-assert(!/<script\b(?![^>]*\bsrc=)[^>]*>/i.test(popupHtml), 'inline scripts are not allowed')
-assert(!/(?:src|href)=["'](?:https?:)?\/\//i.test(popupHtml.replace(/<a\b[^>]*>[\s\S]*?<\/a>/gi, '')), 'remote runtime resources are not allowed')
+const extensionPages = new Map([
+  ['popup.html', { scripts: ['shared.js', 'popup.js'], source: 'popup.js' }],
+  ['workspace.html', { scripts: ['shared.js', 'workspace.js'], source: 'workspace.js' }],
+])
 
-const popupJs = readText('popup.js')
+for (const [pagePath, page] of extensionPages) {
+  const html = readText(pagePath)
+  const scriptTags = [
+    ...html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*>\s*<\/script>/gi),
+  ]
+  assert(
+    JSON.stringify(scriptTags.map((match) => match[1])) === JSON.stringify(page.scripts),
+    `${pagePath} must load only ${page.scripts.join(' followed by ')}`,
+  )
+  assert(!/<script\b(?![^>]*\bsrc=)[^>]*>/i.test(html), `${pagePath} contains an inline script`)
+  const withoutAnchors = html.replace(/<a\b[^>]*>[\s\S]*?<\/a>/gi, '')
+  assert(
+    !/(?:src|href)=["'](?:https?:)?\/\//i.test(withoutAnchors),
+    `${pagePath} contains a remote runtime resource`,
+  )
+  assert(
+    !/\son\w+\s*=/i.test(html),
+    `${pagePath} contains an inline event handler`,
+  )
+
+  const source = readText(page.source)
+  const requiredIds = new Set(
+    [...source.matchAll(/document\.getElementById\(['"]([^'"]+)['"]\)/g)].map(
+      (match) => match[1],
+    ),
+  )
+  for (const id of requiredIds) {
+    assert(
+      new RegExp(`\\bid=["']${id}["']`).test(html),
+      `${page.source} requires missing #${id} in ${pagePath}`,
+    )
+  }
+}
+
 const prohibitedRuntimePatterns = [
   [/\beval\s*\(/, 'eval'],
   [/\bnew\s+Function\s*\(/, 'new Function'],
@@ -134,9 +173,16 @@ const prohibitedRuntimePatterns = [
   [/\bfetch\s*\(/, 'fetch'],
   [/\bXMLHttpRequest\b/, 'XMLHttpRequest'],
   [/\bWebSocket\b/, 'WebSocket'],
+  [/\bEventSource\b/, 'EventSource'],
+  [/\bsendBeacon\s*\(/, 'sendBeacon'],
 ]
-for (const [pattern, label] of prohibitedRuntimePatterns) {
-  assert(!pattern.test(popupJs), `${label} is not allowed in popup.js`)
+
+const runtimeScripts = ['shared.js', 'popup.js', 'workspace.js']
+for (const relativePath of runtimeScripts) {
+  const source = readText(relativePath)
+  for (const [pattern, label] of prohibitedRuntimePatterns) {
+    assert(!pattern.test(source), `${label} is not allowed in ${relativePath}`)
+  }
 }
 
 console.log(`Validated AI Bookmark Organizer ${manifest.version}`)

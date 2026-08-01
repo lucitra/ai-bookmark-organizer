@@ -9,11 +9,10 @@ statement in the dashboard.
 - **Package:** `dist/ai-bookmark-organizer-1.2.0.zip`
 - **Manifest version:** `1.2.0`
 - **Visibility:** Public
-- **BLOCKED — live privacy page is stale:**
-  `https://lucitra.ai/tools/ai-bookmark-organizer/privacy/` returns HTTP 200 but
-  still says all bookmark processing is local and does not disclose Agent
-  Access, optional Native Messaging, external provider consent, or revocation.
-  Publish the current `PRIVACY.md` before uploading this version.
+- **Privacy page:**
+  `https://lucitra.ai/tools/ai-bookmark-organizer/privacy/` is live and discloses
+  Agent Access, optional Native Messaging, external provider consent, data
+  scope, and revocation.
 - **BLOCKED — screenshots:** `store-assets/screenshot-1.png` shows an older UI.
   Replace it with real v1.2 captures of quick save, populated organizer preview,
   Ask Bookmarks with sources, Agent Access settings, and the resulting
@@ -27,8 +26,8 @@ statement in the dashboard.
   macOS only. Keep Agent Access described as optional; do not imply Windows or
   Linux companion support until installers exist.
 
-Do not upload the package until the privacy page and screenshots are current,
-the dashboard category mapping is resolved, and isolated Chrome QA passes.
+Do not submit the package until the screenshots are current, the dashboard
+category mapping is resolved, and isolated Chrome QA passes.
 
 ## 2. Store listing
 

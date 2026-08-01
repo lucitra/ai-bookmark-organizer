@@ -12,13 +12,39 @@ trap cleanup EXIT
 
 node --test "${project_dir}"/test/*.test.cjs
 node "${project_dir}/scripts/validate-site.mjs"
-
-"${project_dir}/scripts/build-release.sh" > /dev/null
+npm --prefix "${project_dir}/companion" ci --ignore-scripts
+npm --prefix "${project_dir}/companion" run check
+npm --prefix "${project_dir}/companion" test
 
 manifest_version="$(
   node -e "const fs=require('fs'); const value=JSON.parse(fs.readFileSync(process.argv[1], 'utf8')); process.stdout.write(value.version)" \
     "${project_dir}/manifest.json"
 )"
+companion_version="$(
+  node -e "const value=require(process.argv[1]); process.stdout.write(value.version)" \
+    "${project_dir}/companion/package.json"
+)"
+test "${manifest_version}" = "${companion_version}"
+(
+  cd "${project_dir}/companion"
+  npm pack --dry-run --json
+) > "${validation_dir}/companion-pack.json"
+node -e '
+  const fs = require("fs")
+  const result = JSON.parse(fs.readFileSync(process.argv[1], "utf8"))[0]
+  const names = new Set(result.files.map((file) => file.path))
+  const required = ["README.md", "LICENSE", "package.json", "bin/lucitra-bookmarks.mjs"]
+  for (const path of required) {
+    if (!names.has(path)) throw new Error(`Companion package is missing ${path}`)
+  }
+  for (const path of names) {
+    if (path.startsWith("test/") || path === "package-lock.json") {
+      throw new Error(`Companion package contains development file ${path}`)
+    }
+  }
+' "${validation_dir}/companion-pack.json"
+
+"${project_dir}/scripts/build-release.sh" > /dev/null
 archive_path="${project_dir}/dist/ai-bookmark-organizer-${manifest_version}.zip"
 
 cp "${archive_path}" "${validation_dir}/first.zip"

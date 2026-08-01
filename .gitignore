@@ -1,5 +1,6 @@
 .DS_Store
 dist/
+companion/node_modules/
 
 # Internal design working files are archived outside the public repository.
 brand/claude/

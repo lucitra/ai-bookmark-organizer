@@ -1,0 +1,54 @@
+name: Publish npm Companion
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  publish:
+    name: Publish trusted companion package
+    if: >-
+      github.repository == 'lucitra/ai-bookmark-organizer' &&
+      (github.event_name == 'workflow_dispatch' || vars.NPM_PUBLISH_ENABLED == 'true')
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out release source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up supported Node and npm
+        uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
+        with:
+          node-version: 24.18.1
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: Verify source and release version
+        env:
+          RELEASE_EVENT: ${{ github.event_name }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          manifest_version="$(node -p "JSON.parse(require('fs').readFileSync('manifest.json', 'utf8')).version")"
+          package_version="$(node -p "require('./companion/package.json').version")"
+          test "${manifest_version}" = "${package_version}"
+          if test "${RELEASE_EVENT}" = "push"; then
+            test "${RELEASE_TAG}" = "v${package_version}"
+          fi
+          git merge-base --is-ancestor "${GITHUB_SHA}" "origin/main"
+
+      - name: Validate package and extension
+        run: scripts/validate-release.sh
+
+      - name: Publish with npm trusted publishing
+        working-directory: companion
+        run: npm publish --access public

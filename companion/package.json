@@ -1,0 +1,42 @@
+{
+  "name": "@lucitra/bookmark-agent-companion",
+  "version": "1.2.0",
+  "description": "Local MCP and Chrome Native Messaging bridge for AI Bookmark Organizer.",
+  "license": "MIT",
+  "homepage": "https://lucitra.github.io/ai-bookmark-organizer/installation.html",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lucitra/ai-bookmark-organizer.git",
+    "directory": "companion"
+  },
+  "bugs": {
+    "url": "https://github.com/lucitra/ai-bookmark-organizer/issues"
+  },
+  "keywords": [
+    "bookmarks",
+    "chrome-extension",
+    "mcp",
+    "model-context-protocol",
+    "privacy"
+  ],
+  "type": "module",
+  "files": [
+    "bin/",
+    "scripts/",
+    "src/"
+  ],
+  "bin": {
+    "lucitra-bookmarks": "bin/lucitra-bookmarks.mjs"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "check": "node --check bin/lucitra-bookmarks.mjs && node --check src/*.mjs && node --check scripts/*.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {}
+}

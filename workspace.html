@@ -9,22 +9,21 @@
   </head>
   <body>
     <header class="topbar">
-      <div class="brand-lockup">
-        <a
-          class="company-brand"
-          href="https://lucitra.ai/"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Lucitra home"
-        >LUCITRA</a>
-        <span class="brand-rule" aria-hidden="true"></span>
-        <a class="product-brand" href="workspace.html">
-          <img src="icons/icon-32.png" alt="" width="28" height="28" />
-          <span>AI Bookmark Organizer</span>
-        </a>
-      </div>
+      <a class="product-brand" href="workspace.html">
+        <img src="icons/icon-32.png" alt="" width="24" height="24" />
+        <span>Bookmarks</span>
+      </a>
+      <nav class="workspace-tabs" aria-label="Bookmark tools">
+        <button class="nav-button is-active" type="button" data-view="organizeView">
+          Organize
+        </button>
+        <button class="nav-button" type="button" data-view="askView">
+          Ask
+        </button>
+      </nav>
       <div class="topbar-actions">
         <span id="aiBadge" class="badge badge-muted">Checking AI</span>
+        <a href="settings.html">Settings</a>
         <a href="https://github.com/lucitra/ai-bookmark-organizer" target="_blank" rel="noopener noreferrer">
           Source
         </a>
@@ -39,39 +38,13 @@
     </header>
 
     <div class="workspace-shell">
-      <aside class="sidebar" aria-label="Workspace navigation">
-        <button class="nav-button is-active" type="button" data-view="organizeView">
-          <span class="nav-icon" aria-hidden="true">◎</span>
-          <span>
-            <strong>Organize</strong>
-            <small>Plan, preview, apply</small>
-          </span>
-        </button>
-        <button class="nav-button" type="button" data-view="askView">
-          <span class="nav-icon" aria-hidden="true">?</span>
-          <span>
-            <strong>Ask Bookmarks</strong>
-            <small>Metadata-grounded answers</small>
-          </span>
-        </button>
-
-        <div class="privacy-note">
-          <strong class="luci-mono">local / private / reversible</strong>
-          <span>No cloud AI, accounts, tracking, or page-content collection.</span>
-        </div>
-      </aside>
-
       <main class="main-content">
         <section id="organizeView" class="workspace-view" aria-labelledby="organizeTitle">
           <div class="page-heading">
             <div>
-              <p class="eyebrow">Standalone bookmark workspace</p>
-              <h1 id="organizeTitle">
-                Your bookmarks, made legible<span class="luci-caret" aria-hidden="true"></span>
-              </h1>
+              <h1 id="organizeTitle">Organize bookmarks</h1>
               <p>
-                Choose an explicit scope, describe the structure you want, then review every
-                proposed move. Closing this page pauses safely at the latest checkpoint.
+                Choose a scope, generate a plan, and review every move before applying it.
               </p>
             </div>
             <button id="undoButton" class="button button-secondary" type="button" hidden>
@@ -119,6 +92,53 @@
                   <small>Excludes bookmarks already inside AI Organized Bookmarks.</small>
                 </span>
               </label>
+            </div>
+
+            <div class="instruction-starters" aria-labelledby="instructionStarterTitle">
+              <div class="instruction-starter-heading">
+                <div>
+                  <span id="instructionStarterTitle">Start with a preset</span>
+                  <small>Choose one as-is, edit it, or draft one from this scope.</small>
+                </div>
+                <button
+                  id="draftInstructionButton"
+                  class="button button-secondary"
+                  type="button"
+                  disabled
+                >
+                  Draft from scope
+                </button>
+              </div>
+              <div class="instruction-presets">
+                <button
+                  type="button"
+                  data-organizer-instruction="Group bookmarks into specific, reusable topics based on their purpose. Prefer clear distinctions over broad catch-all categories."
+                >
+                  <strong>Balanced library</strong>
+                  <small>Clear topics for a mixed collection</small>
+                </button>
+                <button
+                  type="button"
+                  data-organizer-instruction="Organize for practical work across companies, people, research, tools, operations, and learning. Keep categories distinct and reusable."
+                >
+                  <strong>Work &amp; operations</strong>
+                  <small>Build an everyday working library</small>
+                </button>
+                <button
+                  type="button"
+                  data-organizer-instruction="Separate research, reference material, courses, tutorials, and ideas to revisit. Prefer subject-specific categories when the collection supports them."
+                >
+                  <strong>Research &amp; learning</strong>
+                  <small>Distinguish sources from study material</small>
+                </button>
+                <button
+                  type="button"
+                  data-organizer-instruction="Separate software tools, AI products, developer infrastructure, design resources, and technical documentation. Avoid a generic Technology category."
+                >
+                  <strong>Tools &amp; technology</strong>
+                  <small>Use precise technical categories</small>
+                </button>
+              </div>
             </div>
 
             <label class="field">
@@ -200,52 +220,109 @@
         <section id="askView" class="workspace-view" aria-labelledby="askTitle" hidden>
           <div class="page-heading">
             <div>
-              <p class="eyebrow">Metadata-grounded local AI</p>
-              <h1 id="askTitle">
-                Ask your bookmarks<span class="luci-caret" aria-hidden="true"></span>
-              </h1>
+              <h1 id="askTitle">Ask bookmarks</h1>
               <p>
-                Answers use saved titles, URLs, folder paths, and organizer categories. The
-                extension does not fetch or read the linked webpages.
+                Search titles, URLs, folders, and organizer categories without reading webpages.
               </p>
             </div>
           </div>
 
-          <section class="card ask-card">
-            <div class="ask-controls">
-              <label class="field">
-                <span>Search scope</span>
-                <select id="askScopeSelect">
-                  <option value="all">All bookmarks</option>
-                </select>
-              </label>
-              <label class="field ask-field">
-                <span>Question</span>
+          <section class="card ask-card" aria-label="Bookmark assistant">
+            <aside class="chat-history" aria-label="Conversation history">
+              <div class="history-heading">
+                <div>
+                  <span>Conversations</span>
+                  <small>Stored only on this device</small>
+                </div>
+                <button id="newChatButton" type="button">New</button>
+              </div>
+              <div id="chatHistoryList" class="history-list"></div>
+            </aside>
+
+            <div class="chat-surface">
+              <div class="chat-toolbar">
+                <label class="field chat-scope-field">
+                  <span>Search scope</span>
+                  <select id="askScopeSelect">
+                    <option value="all">All bookmarks</option>
+                  </select>
+                </label>
+                <div class="chat-scope-summary" aria-live="polite">
+                  <span id="askScopeCount">Loading bookmarks…</span>
+                  <span class="local-boundary">titles · URLs · folders only</span>
+                </div>
+                <button id="clearChatButton" class="button button-secondary chat-clear" type="button">
+                  Delete conversation
+                </button>
+              </div>
+
+              <div id="chatMessages" class="chat-messages" aria-live="polite" aria-busy="false">
+                <div class="chat-empty">
+                  <span class="chat-empty-mark" aria-hidden="true">?</span>
+                  <strong>Ask, investigate, then act</strong>
+                  <span>
+                    Answers stay grounded in bookmark metadata. Actions become reviewable proposals;
+                    they never run silently. Choose a preset below to begin without typing.
+                  </span>
+                </div>
+              </div>
+
+              <div class="suggested-questions" aria-label="One-click bookmark assistant presets">
+                <div class="preset-heading">
+                  <span>Start with a preset</span>
+                  <small>Runs immediately using the selected bookmark scope</small>
+                </div>
+                <div class="preset-grid">
+                  <button type="button" data-question="What are the main themes in my bookmarks?">
+                    <strong>Map my library</strong>
+                    <small>Summarize the main themes</small>
+                  </button>
+                  <button type="button" data-question="Which topics have the most bookmarks?">
+                    <strong>Largest topics</strong>
+                    <small>See where the collection is concentrated</small>
+                  </button>
+                  <button type="button" data-question="Which VC firms and investors do I have bookmarked?">
+                    <strong>VC &amp; investors</strong>
+                    <small>Find fundraising-related bookmarks</small>
+                  </button>
+                  <button type="button" data-question="Which AI tools and developer resources have I saved?">
+                    <strong>AI &amp; developer tools</strong>
+                    <small>Surface technical resources</small>
+                  </button>
+                  <button type="button" data-question="Which bookmarks are loose or poorly categorized?">
+                    <strong>Find loose bookmarks</strong>
+                    <small>Inspect filing gaps</small>
+                  </button>
+                  <button type="button" data-question="Which bookmarks appear to be duplicates?">
+                    <strong>Find duplicate links</strong>
+                    <small>Prepare a reversible cleanup</small>
+                  </button>
+                  <button type="button" data-question="Organize my bookmarks by topic with specific, reusable categories.">
+                    <strong>Organize by topic</strong>
+                    <small>Prepare a category plan</small>
+                  </button>
+                  <button type="button" data-question="Organize my bookmarks for work across research, tools, companies, people, learning, and operations.">
+                    <strong>Organize for work</strong>
+                    <small>Prepare a practical work library</small>
+                  </button>
+                </div>
+              </div>
+
+              <div class="chat-composer">
+                <label class="visually-hidden" for="questionInput">Message the bookmark assistant</label>
                 <textarea
                   id="questionInput"
                   rows="2"
                   maxlength="600"
-                  placeholder="What NVIDIA developer resources have I saved?"
+                  placeholder="Ask about your bookmarks or describe how you want them organized…"
                 ></textarea>
-              </label>
-              <button id="askButton" class="button button-primary" type="button">Ask locally</button>
-            </div>
-
-            <div class="suggested-questions" aria-label="Suggested questions">
-              <button type="button" data-question="What are the main themes in my bookmarks?">
-                Main themes
-              </button>
-              <button type="button" data-question="Which bookmarks appear to be duplicates?">
-                Possible duplicates
-              </button>
-              <button type="button" data-question="Which topics have the most bookmarks?">
-                Largest topics
-              </button>
-            </div>
-
-            <div id="chatMessages" class="chat-messages">
-              <div class="chat-empty">
-                Ask a question to receive an answer with links back to relevant bookmarks.
+                <div class="composer-footer">
+                  <span id="chatStatus" class="composer-status">Local metadata context</span>
+                  <span class="composer-shortcut luci-mono">⌘ ↵ to send</span>
+                  <button id="askButton" class="button button-primary" type="button">
+                    Send
+                  </button>
+                </div>
               </div>
             </div>
           </section>

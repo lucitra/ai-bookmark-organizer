@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Agent Access · AI Bookmark Organizer</title>
+    <link rel="stylesheet" href="lucitra.css" />
+    <link rel="stylesheet" href="settings.css" />
+  </head>
+  <body>
+    <header class="settings-bar">
+      <a class="settings-brand" href="workspace.html">
+        <img src="icons/icon-32.png" alt="" width="24" height="24" />
+        <span>Bookmarks</span>
+      </a>
+      <span class="settings-title">Agent Access</span>
+      <a href="workspace.html#organize">Back to organizer</a>
+    </header>
+
+    <main class="settings-shell">
+      <div class="page-heading">
+        <p class="overline">Privacy-first settings</p>
+        <h1>Connect local agents intentionally</h1>
+        <p>
+          The organizer remains local by default. Agent Access is optional, revocable, and
+          limited to the bookmark scope and change policy you choose here.
+        </p>
+      </div>
+
+      <section class="settings-card local-card" aria-labelledby="localTitle">
+        <div>
+          <span class="status-dot status-dot-local" aria-hidden="true"></span>
+          <div>
+            <h2 id="localTitle">Local organizer is always the default</h2>
+            <p>
+              Chrome Built-in AI and deterministic fallback rules run without sending bookmark
+              metadata to Lucitra or an external model.
+            </p>
+          </div>
+        </div>
+        <span class="mode-label">Local</span>
+      </section>
+
+      <section class="settings-card" aria-labelledby="agentAccessTitle">
+        <div class="section-heading">
+          <div>
+            <p class="step-label">Optional capability</p>
+            <h2 id="agentAccessTitle">Agent Access</h2>
+            <p>
+              Connect the separately installed Lucitra companion through Chrome Native
+              Messaging. No public server or inbound network port is used.
+            </p>
+          </div>
+          <span id="agentState" class="state-pill">Off</span>
+        </div>
+
+        <div class="connection-row">
+          <div>
+            <strong id="connectionTitle">Not connected</strong>
+            <span id="connectionMessage">Agent Access has not been enabled.</span>
+          </div>
+          <div class="button-row">
+            <button id="enableAgentButton" class="button button-primary" type="button">
+              Enable Agent Access
+            </button>
+            <button id="disableAgentButton" class="button button-secondary" type="button" hidden>
+              Disable and revoke
+            </button>
+          </div>
+        </div>
+
+        <p class="permission-note">
+          Chrome will ask permission to communicate with the cooperating Lucitra application.
+          The extension continues to work normally if you decline.
+        </p>
+      </section>
+
+      <form id="policyForm">
+        <section class="settings-card" aria-labelledby="limitsTitle">
+          <div class="section-heading">
+            <div>
+              <p class="step-label">Access limits</p>
+              <h2 id="limitsTitle">Choose what agents can access</h2>
+            </div>
+          </div>
+
+          <div class="field-grid">
+            <label class="field">
+              <span>Bookmark scope</span>
+              <select id="agentScope">
+                <option value="all">All bookmarks</option>
+              </select>
+              <small>A restricted agent can only read and organize inside this folder.</small>
+            </label>
+
+            <label class="field">
+              <span>Change policy</span>
+              <select id="accessMode">
+                <option value="read-only">Read-only</option>
+                <option value="reviewed">Allow reviewed changes</option>
+              </select>
+              <small>Writes always require a prepared plan and remain undoable.</small>
+            </label>
+          </div>
+        </section>
+
+        <section class="settings-card" aria-labelledby="externalTitle">
+          <div class="section-heading">
+            <div>
+              <p class="step-label">Off by default</p>
+              <h2 id="externalTitle">External AI processing</h2>
+              <p>
+                Codex and Claude may use remote models even when their applications run on this
+                computer. Select each provider you intentionally want to connect.
+              </p>
+            </div>
+            <span class="mode-label mode-label-muted">Explicit opt-in</span>
+          </div>
+
+          <fieldset class="provider-list">
+            <legend class="visually-hidden">Allowed external providers</legend>
+            <label>
+              <input id="allowCodex" type="checkbox" />
+              <span>
+                <strong>Codex</strong>
+                <small>Allow selected bookmark metadata to be processed by OpenAI.</small>
+              </span>
+            </label>
+            <label>
+              <input id="allowClaude" type="checkbox" />
+              <span>
+                <strong>Claude</strong>
+                <small>Allow selected bookmark metadata to be processed by Anthropic.</small>
+              </span>
+            </label>
+          </fieldset>
+
+          <div id="externalDisclosure" class="disclosure" hidden>
+            <strong>Before external processing begins</strong>
+            <p>
+              The providers selected above may receive bookmark titles, URLs, folder paths,
+              organizer categories, and your instructions from the approved scope. Linked webpage
+              content, browsing history, cookies, passwords, and data from other tabs are not read
+              or sent by this extension. Lucitra does not operate an intermediary cloud service.
+            </p>
+            <label class="consent-check">
+              <input id="externalConsent" type="checkbox" />
+              <span>
+                I understand what data may be shared and authorize the selected providers.
+              </span>
+            </label>
+          </div>
+        </section>
+
+        <div class="save-bar">
+          <span id="settingsStatus" role="status" aria-live="polite">
+            Local-only processing is active.
+          </span>
+          <button id="savePolicyButton" class="button button-primary" type="submit">
+            Save access policy
+          </button>
+        </div>
+      </form>
+
+      <section class="setup-note" aria-labelledby="companionTitle">
+        <h2 id="companionTitle">Local companion required</h2>
+        <p>
+          Agent Access requires the open-source Lucitra companion to be installed separately.
+          Installation registers a native host restricted to this extension ID.
+        </p>
+        <a
+          href="https://github.com/lucitra/ai-bookmark-organizer#agent-access"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          View companion setup
+        </a>
+      </section>
+    </main>
+
+    <script src="shared.js"></script>
+    <script src="agent-core.js"></script>
+    <script src="settings.js"></script>
+  </body>
+</html>

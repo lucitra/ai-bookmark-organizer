@@ -9,79 +9,84 @@
   </head>
   <body>
     <main class="app-shell">
-      <header class="product-bar">
-        <div class="company-lockup" aria-label="Lucitra">
-          <span class="company-word">LUCITRA</span>
-          <span class="product-crumb luci-mono">AI Bookmark Organizer</span>
-        </div>
-        <span id="aiBadge" class="badge badge-muted">Checking</span>
+      <header class="tool-bar">
+        <nav class="mode-switcher" aria-label="Bookmark tools">
+          <span aria-current="page">Save</span>
+          <a href="workspace.html#organize" target="_blank">Organize</a>
+          <a href="workspace.html#ask" target="_blank">Ask</a>
+        </nav>
+        <span id="aiBadge" class="tool-ai">Checking AI</span>
       </header>
 
-      <section class="intro">
-        <img src="icons/icon-48.png" alt="" width="48" height="48" />
-        <div>
-          <p class="eyebrow">Quick capture</p>
-          <h1>Save this page<span class="luci-caret" aria-hidden="true"></span></h1>
-          <p>File the active page now. Organize the wider collection when you are ready.</p>
+      <section class="record" aria-labelledby="recordTitle">
+        <div class="record-heading">
+          <div>
+            <p class="overline">Current page</p>
+            <h1 id="recordTitle">Save this page</h1>
+          </div>
+          <span class="context-label luci-mono">active tab</span>
         </div>
+
+        <div class="page-summary">
+          <h2 id="activePageTitle">Reading the current page…</h2>
+          <span id="activePageHost">Chrome</span>
+        </div>
+
+        <dl class="property-list">
+          <div class="property-row">
+            <dt>Source</dt>
+            <dd id="activePageUrl">Reading URL…</dd>
+          </div>
+          <div class="property-row">
+            <dt>Filed to</dt>
+            <dd id="filingSummary">Loading…</dd>
+          </div>
+        </dl>
+
+        <details class="filing-options">
+          <summary>
+            <span>Filing options</span>
+            <span class="luci-mono">Folder + category</span>
+          </summary>
+
+          <div class="filing-fields">
+            <label class="field">
+              <span>Folder</span>
+              <select id="destinationFolder"></select>
+            </label>
+
+            <label class="field">
+              <span>Category</span>
+              <input
+                id="bookmarkCategory"
+                type="text"
+                maxlength="60"
+                placeholder="Optional subfolder"
+                autocomplete="off"
+              />
+            </label>
+
+            <button id="suggestButton" class="button button-secondary" type="button">
+              Suggest a better category
+            </button>
+          </div>
+        </details>
       </section>
 
-      <section class="capture-card" aria-labelledby="captureTitle">
-        <h2 id="captureTitle" class="visually-hidden">Bookmark details</h2>
-
-        <label class="field">
-          <span>Title</span>
-          <input id="bookmarkTitle" type="text" maxlength="300" autocomplete="off" />
-        </label>
-
-        <label class="field">
-          <span>URL</span>
-          <input id="bookmarkUrl" type="url" readonly />
-        </label>
-
-        <div class="field-grid">
-          <label class="field">
-            <span>Save under</span>
-            <select id="destinationFolder"></select>
-          </label>
-
-          <label class="field">
-            <span>Category</span>
-            <input
-              id="bookmarkCategory"
-              type="text"
-              maxlength="60"
-              placeholder="Optional folder"
-              autocomplete="off"
-            />
-          </label>
-        </div>
-
-        <div class="capture-actions">
-          <button id="suggestButton" class="button button-secondary" type="button">
-            Suggest category
-          </button>
-          <button id="saveButton" class="button button-primary" type="button">
-            Save bookmark
-          </button>
-        </div>
-
-        <div class="status-card" aria-live="polite">
+      <section class="save-area" aria-label="Save bookmark">
+        <button id="saveButton" class="button button-primary" type="button">
+          Save bookmark
+        </button>
+        <div class="status-line" aria-live="polite">
           <span id="statusDot" class="status-dot"></span>
           <span id="statusText">Reading the current tab…</span>
+          <span class="shortcut luci-mono">⌘ ↵</span>
         </div>
       </section>
 
-      <a class="workspace-link" href="workspace.html" target="_blank">
-        <span>
-          <strong>Open Organizer Workspace</strong>
-          <small>Plan, resume, review, and ask about bookmarks</small>
-        </span>
-        <span class="workspace-arrow luci-mono" aria-hidden="true">↗</span>
-      </a>
-
-      <footer class="footer">
-        <span class="local-note luci-mono">local / private / reversible</span>
+      <footer class="tool-footer">
+        <span>Lucitra · Local only</span>
+        <a href="settings.html" target="_blank">Settings</a>
         <a href="https://github.com/lucitra/ai-bookmark-organizer" target="_blank" rel="noopener noreferrer">
           Source
         </a>

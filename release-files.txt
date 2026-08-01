@@ -1,12 +1,17 @@
 manifest.json
 lucitra.css
 shared.js
+agent-core.js
+service-worker.js
 popup.html
 popup.css
 popup.js
 workspace.html
 workspace.css
 workspace.js
+settings.html
+settings.css
+settings.js
 icons/icon-16.png
 icons/icon-32.png
 icons/icon-48.png

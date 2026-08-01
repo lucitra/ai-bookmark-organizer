@@ -48,12 +48,22 @@ assert(
 )
 assert(Number(manifest.minimum_chrome_version) >= 138, 'minimum_chrome_version must be at least 138')
 assert(manifest.action?.default_popup === 'popup.html', 'action.default_popup must be popup.html')
-assert(!manifest.background, 'background pages and service workers are not allowed')
+assert(
+  JSON.stringify(manifest.background) === JSON.stringify({ service_worker: 'service-worker.js' }),
+  'background must contain only the local service-worker.js bridge',
+)
 assert(!manifest.content_scripts, 'content scripts are not allowed')
 assert(!manifest.externally_connectable, 'external extension connections are not allowed')
 assert(!manifest.host_permissions, 'host_permissions are not allowed for this extension')
 assert(!manifest.optional_host_permissions, 'optional_host_permissions are not allowed for this extension')
-assert(!manifest.optional_permissions, 'optional permissions are not allowed for this extension')
+assert(
+  JSON.stringify(sorted(manifest.optional_permissions || [])) === JSON.stringify(['nativeMessaging']),
+  'nativeMessaging must be the only optional permission',
+)
+assert(
+  JSON.stringify(manifest.options_ui) === JSON.stringify({ page: 'settings.html', open_in_tab: true }),
+  'options_ui must open the packaged settings.html page in a tab',
+)
 assert(!manifest.update_url, 'update_url must be supplied by Chrome Web Store, not the source manifest')
 
 const permissions = sorted(manifest.permissions || [])
@@ -106,12 +116,17 @@ const requiredPackageFiles = [
   'manifest.json',
   'lucitra.css',
   'shared.js',
+  'agent-core.js',
+  'service-worker.js',
   'popup.html',
   'popup.css',
   'popup.js',
   'workspace.html',
   'workspace.css',
   'workspace.js',
+  'settings.html',
+  'settings.css',
+  'settings.js',
   ...Object.values(expectedIcons),
 ]
 assert(
@@ -142,6 +157,14 @@ const extensionPages = new Map([
       styles: ['lucitra.css', 'workspace.css'],
       scripts: ['shared.js', 'workspace.js'],
       source: 'workspace.js',
+    },
+  ],
+  [
+    'settings.html',
+    {
+      styles: ['lucitra.css', 'settings.css'],
+      scripts: ['shared.js', 'agent-core.js', 'settings.js'],
+      source: 'settings.js',
     },
   ],
 ])
@@ -191,7 +214,6 @@ const prohibitedRuntimePatterns = [
   [/\beval\s*\(/, 'eval'],
   [/\bnew\s+Function\s*\(/, 'new Function'],
   [/\bimport\s*\(/, 'dynamic import'],
-  [/\bimportScripts\s*\(/, 'importScripts'],
   [/\bfetch\s*\(/, 'fetch'],
   [/\bXMLHttpRequest\b/, 'XMLHttpRequest'],
   [/\bWebSocket\b/, 'WebSocket'],
@@ -199,7 +221,14 @@ const prohibitedRuntimePatterns = [
   [/\bsendBeacon\s*\(/, 'sendBeacon'],
 ]
 
-const runtimeScripts = ['shared.js', 'popup.js', 'workspace.js']
+const runtimeScripts = [
+  'shared.js',
+  'agent-core.js',
+  'service-worker.js',
+  'popup.js',
+  'workspace.js',
+  'settings.js',
+]
 for (const relativePath of runtimeScripts) {
   const source = readText(relativePath)
   for (const [pattern, label] of prohibitedRuntimePatterns) {
@@ -207,7 +236,16 @@ for (const relativePath of runtimeScripts) {
   }
 }
 
-for (const relativePath of ['lucitra.css', 'popup.css', 'workspace.css']) {
+const serviceWorkerSource = readText('service-worker.js')
+assert(
+  /^importScripts\('shared\.js', 'agent-core\.js'\)/.test(serviceWorkerSource),
+  'service-worker.js must import only the packaged shared and agent core scripts',
+)
+for (const relativePath of runtimeScripts.filter((path) => path !== 'service-worker.js')) {
+  assert(!/\bimportScripts\s*\(/.test(readText(relativePath)), `importScripts is not allowed in ${relativePath}`)
+}
+
+for (const relativePath of ['lucitra.css', 'popup.css', 'workspace.css', 'settings.css']) {
   const source = readText(relativePath)
   assert(
     !/@import\b|url\(\s*["']?(?:https?:)?\/\//i.test(source),

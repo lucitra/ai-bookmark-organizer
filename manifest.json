@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AI Bookmark Organizer",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Save, organize, and search Chrome bookmarks locally with Chrome Built-in AI.",
   "minimum_chrome_version": "138",
   "homepage_url": "https://lucitra.github.io/ai-bookmark-organizer/",
@@ -12,6 +12,14 @@
     "128": "icons/icon-128.png"
   },
   "permissions": ["activeTab", "bookmarks", "storage"],
+  "optional_permissions": ["nativeMessaging"],
+  "background": {
+    "service_worker": "service-worker.js"
+  },
+  "options_ui": {
+    "page": "settings.html",
+    "open_in_tab": true
+  },
   "action": {
     "default_title": "AI Bookmark Organizer",
     "default_popup": "popup.html",

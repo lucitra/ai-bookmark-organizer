@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Installation · AI Bookmark Organizer · Lucitra</title>
+    <meta
+      name="description"
+      content="Install AI Bookmark Organizer, connect the local Lucitra companion, and add bookmark tools to Codex or Claude."
+    />
+    <meta name="theme-color" content="#fcfdfd" />
+    <link
+      rel="canonical"
+      href="https://lucitra.github.io/ai-bookmark-organizer/installation.html"
+    />
+    <link rel="icon" href="./assets/icon-32.png" />
+    <link rel="stylesheet" href="./lucitra.css" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="site-nav">
+      <div class="wrap nav-inner">
+        <div class="nav-brand">
+          <a class="company-word" href="https://lucitra.ai/">LUCITRA</a>
+          <span class="nav-rule" aria-hidden="true"></span>
+          <a class="product-crumb luci-mono" href="./">AI Bookmark Organizer</a>
+        </div>
+        <nav class="nav-links" aria-label="Primary">
+          <a href="./#product">Product</a>
+          <a aria-current="page" href="./installation.html">Installation</a>
+          <a href="https://lucitra.ai/tools/ai-bookmark-organizer/privacy/">Privacy</a>
+          <a href="https://github.com/lucitra/ai-bookmark-organizer">Source</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="guide-hero">
+        <div class="wrap guide-hero-grid">
+          <div>
+            <p class="eyebrow">Get started</p>
+            <h1>Install once. Keep bookmark access under your control.</h1>
+          </div>
+          <div class="guide-summary">
+            <p>
+              Start with the standalone Chrome extension. Add the local MCP companion only if
+              you want Codex, Claude, or another approved client to work with your bookmarks.
+            </p>
+            <div class="guide-badges luci-mono" aria-label="Installation properties">
+              <span>macOS</span>
+              <span>Node 20+</span>
+              <span>Chrome 138+</span>
+              <span>local by default</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="wrap guide-layout">
+        <aside class="guide-toc" aria-label="On this page">
+          <strong class="luci-mono">ON THIS PAGE</strong>
+          <a href="#requirements">Requirements</a>
+          <a href="#install-extension">1. Install the extension</a>
+          <a href="#find-id">2. Find the extension ID</a>
+          <a href="#install-companion">3. Run the npx setup</a>
+          <a href="#enable-access">4. Enable Agent Access</a>
+          <a href="#connect-client">5. Connect an MCP client</a>
+          <a href="#verify">6. Verify the connection</a>
+          <a href="#privacy-boundary">Privacy boundary</a>
+          <a href="#update-remove">Update or remove</a>
+          <a href="#troubleshooting">Troubleshooting</a>
+        </aside>
+
+        <article class="guide-content">
+          <section id="requirements" class="guide-section">
+            <p class="eyebrow">Requirements</p>
+            <h2>What you need</h2>
+            <div class="requirement-grid">
+              <div>
+                <strong>Google Chrome</strong>
+                <p>Chrome 138 or newer. Managed profiles may require the Web Store release.</p>
+              </div>
+              <div>
+                <strong>Node.js</strong>
+                <p>Node.js 20 or newer provides the local companion runtime and <code>npx</code>.</p>
+              </div>
+              <div>
+                <strong>macOS</strong>
+                <p>The automated Native Messaging installer currently supports macOS.</p>
+              </div>
+            </div>
+            <div class="guide-callout guide-callout-local">
+              <span class="callout-mark" aria-hidden="true"></span>
+              <div>
+                <strong>The MCP companion is optional.</strong>
+                <p>
+                  Saving, organizing, asking questions, previewing moves, applying, and undoing
+                  all remain available without installing it.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section id="install-extension" class="guide-section">
+            <div class="guide-step-heading">
+              <span class="guide-step luci-mono">01</span>
+              <div>
+                <p class="eyebrow">Chrome extension</p>
+                <h2>Install AI Bookmark Organizer</h2>
+              </div>
+            </div>
+            <p>
+              The Chrome Web Store listing will be the recommended path after approval. Until
+              then, download the versioned GitHub release and load the unzipped directory.
+            </p>
+            <a
+              class="button button-primary"
+              href="https://github.com/lucitra/ai-bookmark-organizer/releases/latest/download/ai-bookmark-organizer.zip"
+              download
+            >
+              Download extension ZIP
+            </a>
+            <ol class="guide-checklist">
+              <li>Unzip <code>ai-bookmark-organizer.zip</code>.</li>
+              <li>Open <code>chrome://extensions</code>.</li>
+              <li>Enable <strong>Developer mode</strong> and select <strong>Load unpacked</strong>.</li>
+              <li>Select the unzipped folder that directly contains <code>manifest.json</code>.</li>
+              <li>Pin <strong>AI Bookmark Organizer</strong> from Chrome's extensions menu.</li>
+            </ol>
+            <div class="guide-callout guide-callout-held">
+              <strong>Managed Chrome can block unpacked extensions.</strong>
+              <p>A ZIP cannot bypass organization policy. Use the Web Store build after approval.</p>
+            </div>
+          </section>
+
+          <section id="find-id" class="guide-section">
+            <div class="guide-step-heading">
+              <span class="guide-step luci-mono">02</span>
+              <div>
+                <p class="eyebrow">Chrome identity</p>
+                <h2>Copy the extension ID</h2>
+              </div>
+            </div>
+            <p>
+              On <code>chrome://extensions</code>, find AI Bookmark Organizer and copy its
+              32-character ID. The local Native Messaging host is restricted to this exact ID.
+            </p>
+            <div class="id-example luci-mono">
+              <span>EXAMPLE FORMAT</span>
+              <code>abcdefghijklmnopabcdefghijklmnop</code>
+            </div>
+            <p class="guide-fine-print">
+              An unpacked extension ID may differ between computers. The future Chrome Web Store
+              release will provide one stable public ID.
+            </p>
+          </section>
+
+          <section id="install-companion" class="guide-section">
+            <div class="guide-step-heading">
+              <span class="guide-step luci-mono">03</span>
+              <div>
+                <p class="eyebrow">Local companion</p>
+                <h2>Run one npx setup command</h2>
+              </div>
+            </div>
+            <p>
+              Replace <code>YOUR_EXTENSION_ID</code> with the value from the previous step. The
+              command installs an owner-only runtime and registers Chrome's local native host.
+            </p>
+            <pre class="command-block"><code>npx --yes @lucitra/bookmark-agent-companion@1.2.0 setup \
+  --extension-id YOUR_EXTENSION_ID</code></pre>
+            <div class="command-notes">
+              <div>
+                <span class="luci-mono">NO POSTINSTALL</span>
+                <p>The npm package has no dependencies or automatic install scripts.</p>
+              </div>
+              <div>
+                <span class="luci-mono">EXPLICIT SETUP</span>
+                <p>System changes begin only when you invoke the visible <code>setup</code> command.</p>
+              </div>
+              <div>
+                <span class="luci-mono">NO OPEN PORT</span>
+                <p>Chrome Native Messaging and an authenticated local socket connect the pieces.</p>
+              </div>
+            </div>
+          </section>
+
+          <section id="enable-access" class="guide-section">
+            <div class="guide-step-heading">
+              <span class="guide-step luci-mono">04</span>
+              <div>
+                <p class="eyebrow">Chrome approval</p>
+                <h2>Restart Chrome and enable Agent Access</h2>
+              </div>
+            </div>
+            <ol class="guide-checklist">
+              <li>Quit and reopen Chrome so it discovers the new native host.</li>
+              <li>Open AI Bookmark Organizer and select <strong>Settings</strong>.</li>
+              <li>Select <strong>Enable Agent Access</strong> and approve Native Messaging.</li>
+              <li>Choose one bookmark folder or <strong>All bookmarks</strong> as the scope.</li>
+              <li>Keep <strong>Read-only</strong> selected for the first connection.</li>
+            </ol>
+            <p>
+              Codex and Claude remain blocked until you select the matching provider and affirm
+              the external-processing disclosure. Enabling the local bridge alone does not grant
+              either provider access.
+            </p>
+          </section>
+
+          <section id="connect-client" class="guide-section">
+            <div class="guide-step-heading">
+              <span class="guide-step luci-mono">05</span>
+              <div>
+                <p class="eyebrow">MCP client</p>
+                <h2>Add bookmark tools to your agent</h2>
+              </div>
+            </div>
+            <div class="client-grid">
+              <section aria-labelledby="codexClientTitle">
+                <div class="client-heading">
+                  <span class="client-mark luci-mono">C</span>
+                  <h3 id="codexClientTitle">Codex</h3>
+                </div>
+                <pre class="command-block"><code>codex mcp add lucitra-bookmarks -- \
+  npx --yes @lucitra/bookmark-agent-companion@1.2.0 \
+  mcp --client codex</code></pre>
+                <p>Then enable <strong>Codex</strong> under External AI processing in extension Settings.</p>
+              </section>
+              <section aria-labelledby="claudeClientTitle">
+                <div class="client-heading">
+                  <span class="client-mark luci-mono">CL</span>
+                  <h3 id="claudeClientTitle">Claude Code</h3>
+                </div>
+                <pre class="command-block"><code>claude mcp add --transport stdio --scope user \
+  lucitra-bookmarks -- \
+  npx --yes @lucitra/bookmark-agent-companion@1.2.0 \
+  mcp --client claude</code></pre>
+                <p>Then enable <strong>Claude</strong> under External AI processing in extension Settings.</p>
+              </section>
+            </div>
+            <div class="guide-callout">
+              <strong>Start with a status check.</strong>
+              <p>Ask your client: “Check my Lucitra bookmark agent status.”</p>
+            </div>
+          </section>
+
+          <section id="verify" class="guide-section">
+            <div class="guide-step-heading">
+              <span class="guide-step luci-mono">06</span>
+              <div>
+                <p class="eyebrow">Verification</p>
+                <h2>Confirm the local installation</h2>
+              </div>
+            </div>
+            <pre class="command-block"><code>npx --yes @lucitra/bookmark-agent-companion@1.2.0 doctor</code></pre>
+            <p>The command checks:</p>
+            <ul class="verification-list">
+              <li>Local configuration and owner-only permissions</li>
+              <li>The copied dependency-free runtime</li>
+              <li>Chrome's Native Messaging manifest</li>
+              <li>The exact extension origin allowed by that manifest</li>
+            </ul>
+            <p class="guide-fine-print">
+              <code>doctor</code> validates the installation. The MCP
+              <code>bookmarks_status</code> tool validates the live Chrome connection and access policy.
+            </p>
+          </section>
+
+          <section id="privacy-boundary" class="guide-section">
+            <p class="eyebrow">Privacy boundary</p>
+            <h2>What each mode can access</h2>
+            <div class="boundary-table" role="table" aria-label="Bookmark processing modes">
+              <div class="boundary-row boundary-head" role="row">
+                <span role="columnheader">Mode</span>
+                <span role="columnheader">Processing</span>
+                <span role="columnheader">Approval</span>
+              </div>
+              <div class="boundary-row" role="row">
+                <strong role="cell">Standalone</strong>
+                <span role="cell">Chrome local AI or deterministic local rules</span>
+                <span role="cell">Default; no companion required</span>
+              </div>
+              <div class="boundary-row" role="row">
+                <strong role="cell">Local MCP</strong>
+                <span role="cell">Approved bookmark metadata stays on the computer</span>
+                <span role="cell">Agent Access + folder scope</span>
+              </div>
+              <div class="boundary-row" role="row">
+                <strong role="cell">Codex / Claude</strong>
+                <span role="cell">Approved metadata may reach the selected model provider</span>
+                <span role="cell">Provider-specific disclosure and consent</span>
+              </div>
+            </div>
+            <p>
+              Agent tools can search bookmark titles, URLs, hosts, and folder paths. They cannot
+              fetch linked pages or delete bookmarks. Writes require a reviewed policy, an
+              expiring prepared plan, and a matching client and folder scope.
+            </p>
+            <a
+              class="text-link"
+              href="https://lucitra.ai/tools/ai-bookmark-organizer/privacy/"
+            >
+              Read the complete privacy policy <span aria-hidden="true">↗</span>
+            </a>
+          </section>
+
+          <section id="update-remove" class="guide-section">
+            <p class="eyebrow">Lifecycle</p>
+            <h2>Update or remove the companion</h2>
+            <h3>Update</h3>
+            <p>Run setup with the newer published version and the same extension ID:</p>
+            <pre class="command-block"><code>npx --yes @lucitra/bookmark-agent-companion@latest setup \
+  --extension-id YOUR_EXTENSION_ID</code></pre>
+            <h3>Disconnect without uninstalling</h3>
+            <p>
+              In extension Settings, select <strong>Disable and revoke</strong>. Chrome removes the
+              optional permission and external provider approvals.
+            </p>
+            <h3>Uninstall</h3>
+            <pre class="command-block"><code>npx --yes @lucitra/bookmark-agent-companion@1.2.0 uninstall</code></pre>
+            <p>
+              This removes the per-user Native Messaging registration, local authentication token,
+              and copied runtime. It does not remove or change bookmarks.
+            </p>
+          </section>
+
+          <section id="troubleshooting" class="guide-section troubleshooting-section">
+            <p class="eyebrow">Troubleshooting</p>
+            <h2>Common setup issues</h2>
+            <details>
+              <summary>The npm package cannot be found</summary>
+              <p>
+                Confirm the package has been publicly released, your network can reach npm, and the
+                command includes the full <code>@lucitra/bookmark-agent-companion</code> name.
+              </p>
+            </details>
+            <details>
+              <summary>Chrome says the companion is disconnected</summary>
+              <p>
+                Run <code>doctor</code>, restart Chrome, and verify that setup used the extension ID
+                shown on the current computer.
+              </p>
+            </details>
+            <details>
+              <summary>The client says external provider access is not approved</summary>
+              <p>
+                Open extension Settings, select the matching Codex or Claude provider, read the
+                disclosure, affirm consent, and save the access policy.
+              </p>
+            </details>
+            <details>
+              <summary>The client can search but cannot move bookmarks</summary>
+              <p>
+                Read-only is working as designed. Choose <strong>Allow reviewed changes</strong> only
+                when you want the client to prepare and apply reversible organization plans.
+              </p>
+            </details>
+            <details>
+              <summary>Load unpacked is blocked by policy</summary>
+              <p>
+                Organization-managed Chrome profiles may require the public Chrome Web Store build.
+                Local ZIP installation cannot bypass administrator policy.
+              </p>
+            </details>
+            <p class="support-line">
+              Still stuck?
+              <a href="https://github.com/lucitra/ai-bookmark-organizer/issues">Open a support issue</a>.
+            </p>
+          </section>
+        </article>
+      </div>
+    </main>
+
+    <footer class="site-footer guide-footer">
+      <div class="wrap footer-legal">
+        <span>© 2026 Lucitra, Inc.</span>
+        <a href="./">Product</a>
+        <a href="https://lucitra.ai/tools/ai-bookmark-organizer/privacy/">Privacy</a>
+        <a href="https://github.com/lucitra/ai-bookmark-organizer">Source</a>
+        <span class="luci-mono">the caret is the agent ▮</span>
+      </div>
+    </footer>
+  </body>
+</html>

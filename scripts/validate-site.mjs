@@ -45,32 +45,42 @@ function contrastRatio(foreground, background) {
   return (values[0] + 0.05) / (values[1] + 0.05)
 }
 
-const html = read('docs/index.html')
-const stylesheets = [
-  ...html.matchAll(/<link\b[^>]*\brel=["']stylesheet["'][^>]*\bhref=["']([^"']+)["'][^>]*>/gi),
-].map((match) => match[1])
+const pages = new Map([
+  ['docs/index.html', read('docs/index.html')],
+  ['docs/installation.html', read('docs/installation.html')],
+])
 
-assert(
-  JSON.stringify(stylesheets) === JSON.stringify(['./lucitra.css', './styles.css']),
-  'docs/index.html must load the Lucitra foundations before the page styles',
-)
-assert(!/<script\b/i.test(html), 'the landing page must remain script-free')
-assert(!/\son\w+\s*=/i.test(html), 'inline event handlers are not allowed')
+for (const [pagePath, html] of pages) {
+  const stylesheets = [
+    ...html.matchAll(/<link\b[^>]*\brel=["']stylesheet["'][^>]*\bhref=["']([^"']+)["'][^>]*>/gi),
+  ].map((match) => match[1])
 
-const runtimeHtml = html
-  .replace(/<a\b[^>]*>[\s\S]*?<\/a>/gi, '')
-  .replace(/<link\b[^>]*\brel=["']canonical["'][^>]*>/gi, '')
-assert(
-  !/(?:src|href)=["'](?:https?:)?\/\//i.test(runtimeHtml),
-  'remote landing-page runtime resources are not allowed',
-)
+  assert(
+    JSON.stringify(stylesheets) === JSON.stringify(['./lucitra.css', './styles.css']),
+    `${pagePath} must load the Lucitra foundations before the page styles`,
+  )
+  assert(!/<script\b/i.test(html), `${pagePath} must remain script-free`)
+  assert(!/\son\w+\s*=/i.test(html), `inline event handlers are not allowed in ${pagePath}`)
 
-const ids = [...html.matchAll(/\bid=["']([^"']+)["']/gi)].map((match) => match[1])
-assert(new Set(ids).size === ids.length, 'docs/index.html contains duplicate IDs')
+  const runtimeHtml = html
+    .replace(/<a\b[^>]*>[\s\S]*?<\/a>/gi, '')
+    .replace(/<link\b[^>]*\brel=["']canonical["'][^>]*>/gi, '')
+  assert(
+    !/(?:src|href)=["'](?:https?:)?\/\//i.test(runtimeHtml),
+    `remote runtime resources are not allowed in ${pagePath}`,
+  )
+
+  const ids = [...html.matchAll(/\bid=["']([^"']+)["']/gi)].map((match) => match[1])
+  assert(new Set(ids).size === ids.length, `${pagePath} contains duplicate IDs`)
+}
+
+const html = pages.get('docs/index.html')
+const installationHtml = pages.get('docs/installation.html')
 
 for (const relativePath of [
   'docs/lucitra.css',
   'docs/styles.css',
+  'docs/installation.html',
   'docs/assets/icon-32.png',
   'docs/assets/icon-128.png',
 ]) {
@@ -110,8 +120,22 @@ for (const requiredHref of [
   'https://github.com/lucitra/ai-bookmark-organizer',
   'https://github.com/lucitra/ai-bookmark-organizer/releases/latest/download/ai-bookmark-organizer.zip',
   'https://lucitra.ai/tools/ai-bookmark-organizer/privacy/',
+  './installation.html',
 ]) {
   assert(html.includes(`href="${requiredHref}"`), `missing required landing-page link: ${requiredHref}`)
+}
+
+for (const requiredValue of [
+  '@lucitra/bookmark-agent-companion@1.2.0 setup',
+  '@lucitra/bookmark-agent-companion@1.2.0 doctor',
+  'codex mcp add lucitra-bookmarks',
+  'claude mcp add --transport stdio',
+  'chrome://extensions',
+]) {
+  assert(
+    installationHtml.includes(requiredValue),
+    `missing required installation guide value: ${requiredValue}`,
+  )
 }
 
 console.log('Validated GitHub Pages landing page against Lucitra foundations')

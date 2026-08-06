@@ -1,0 +1,19 @@
+{
+  "name": "ai-bookmark-organizer-marketing-capture",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "capture": "node capture.mjs",
+    "qa:ask-large": "node qa-ask-large.mjs",
+    "qa:large": "node qa-large.mjs",
+    "verify": "node verify.mjs",
+    "promote": "node verify.mjs --promote"
+  },
+  "dependencies": {
+    "puppeteer": "25.4.0"
+  }
+}

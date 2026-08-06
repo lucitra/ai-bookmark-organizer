@@ -6,14 +6,15 @@
   const APPLY_HISTORY_STORAGE_KEY = 'bookmarkAgentApplyHistoryV1'
   const EXTERNAL_CONSENT_VERSION = 1
   const PLAN_TTL_MS = 15 * 60 * 1000
-  const MAX_PLAN_ASSIGNMENTS = 500
-  const MAX_PLAN_CATEGORIES = 12
+  const MAX_PLAN_ASSIGNMENTS = 2_000
+  const MAX_PLAN_CATEGORIES = 40
 
   const READ_METHODS = Object.freeze([
     'bookmarks.summary',
     'bookmarks.list_folders',
     'bookmarks.search',
     'bookmarks.find_duplicates',
+    'bookmarks.analyze_plan',
     'bookmarks.prepare_organization',
   ])
   const MUTATION_METHODS = Object.freeze([

@@ -14,12 +14,12 @@
         <span>Bookmarks</span>
       </a>
       <nav class="workspace-tabs" aria-label="Bookmark tools">
-        <button class="nav-button is-active" type="button" data-view="organizeView">
+        <a class="nav-button is-active" href="#organize" data-view="organizeView" aria-current="page">
           Organize
-        </button>
-        <button class="nav-button" type="button" data-view="askView">
+        </a>
+        <a class="nav-button" href="#ask" data-view="askView">
           Ask
-        </button>
+        </a>
       </nav>
       <div class="topbar-actions">
         <span id="aiBadge" class="badge badge-muted">Checking AI</span>
@@ -70,18 +70,27 @@
                 </select>
               </label>
 
-              <label class="field">
-                <span>Destination root</span>
+              <div class="field">
+                <label for="destinationSelect">Destination root</label>
                 <select id="destinationSelect"></select>
-              </label>
+                <div class="destination-guidance">
+                  <small id="destinationHint">Creates AI Organized Bookmarks here. Existing folders are kept.</small>
+                  <button id="moveLibraryButton" type="button" hidden>
+                    Move existing library here
+                  </button>
+                </div>
+              </div>
 
               <label class="field">
-                <span>Maximum planned categories</span>
+                <span>Organization detail</span>
                 <select id="categoryLimit">
-                  <option value="6">6 categories</option>
-                  <option value="8" selected>8 categories</option>
-                  <option value="10">10 categories</option>
-                  <option value="12">12 categories</option>
+                  <option value="auto" selected>Auto — based on collection</option>
+                  <option value="8">Up to 8 leaf folders</option>
+                  <option value="10">Up to 10 leaf folders</option>
+                  <option value="12">Up to 12 leaf folders</option>
+                  <option value="16">Up to 16 leaf folders</option>
+                  <option value="24">Up to 24 leaf folders</option>
+                  <option value="32">Up to 32 leaf folders</option>
                 </select>
               </label>
 
@@ -189,6 +198,43 @@
             <div id="categoryPlan" class="category-plan empty-copy">
               Categories will appear here before bookmark assignment begins.
             </div>
+            <div id="planVisualization" class="plan-visualization" hidden>
+              <section class="plan-tree-panel" aria-labelledby="currentLocationsTitle">
+                <div class="plan-tree-heading">
+                  <span id="currentLocationsTitle">Current locations</span>
+                  <small id="sourceTreeSummary"></small>
+                </div>
+                <div id="sourceTree" class="move-tree"></div>
+              </section>
+              <div class="plan-direction" aria-hidden="true">→</div>
+              <section class="plan-tree-panel plan-tree-destination" aria-labelledby="proposedDestinationTitle">
+                <div class="plan-tree-heading">
+                  <span id="proposedDestinationTitle">Proposed destination</span>
+                  <small id="destinationTreeSummary"></small>
+                </div>
+                <div id="destinationTree" class="move-tree"></div>
+              </section>
+              <p id="planSafetyNote" class="plan-safety-note">
+                Existing folders are kept. Only selected bookmarks move; unselected bookmarks stay where they are.
+              </p>
+            </div>
+            <div id="categoryHealth" class="category-health" hidden>
+              <div>
+                <strong id="categoryHealthTitle">Plan balance</strong>
+                <p id="categoryHealthText"></p>
+              </div>
+              <div class="category-health-actions">
+                <button id="refineLargeButton" class="button button-secondary" type="button">
+                  Refine large folders
+                </button>
+                <button id="mergeTinyButton" class="button button-secondary" type="button">
+                  Merge tiny folders
+                </button>
+              </div>
+              <p id="categoryHealthNote" class="category-health-note">
+                These actions update the proposal only. Bookmarks move only after you select Apply selected.
+              </p>
+            </div>
           </section>
 
           <section class="card preview-card" aria-labelledby="previewTitle">
@@ -213,6 +259,12 @@
               Start a scoped scan to see editable categories and metadata-grounded reasons.
             </div>
             <div id="previewList" class="preview-list" aria-live="polite"></div>
+            <div id="previewMore" class="preview-more" hidden>
+              <span id="previewVisibleCount"></span>
+              <button id="loadMoreButton" class="button button-secondary" type="button">
+                Show more
+              </button>
+            </div>
             <datalist id="categoryOptions"></datalist>
           </section>
         </section>

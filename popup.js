@@ -157,8 +157,21 @@ async function suggestCategory() {
     updateFilingSummary()
     setStatus('Category suggested. Edit it if needed, then save.', 'success')
   } catch (error) {
-    console.error(error)
-    setStatus(error.message || 'Unable to suggest a category.', 'danger')
+    await Organizer.recordAiRuntimeFailure(error)
+    bookmarkCategory.value = Organizer.fallbackCategory(
+      {
+        title: popupState.currentTab.title || popupState.currentTab.url,
+        url: popupState.currentTab.url,
+        folderPath: '',
+      },
+      Organizer.DEFAULT_CATEGORIES,
+    )
+    updateFilingSummary()
+    updateAiBadge({
+      available: false,
+      message: 'Chrome’s local model stopped. Local rules are active.',
+    })
+    setStatus('Chrome’s local model stopped. Used a local fallback suggestion.', 'warning')
   } finally {
     session?.destroy?.()
     popupState.suggesting = false

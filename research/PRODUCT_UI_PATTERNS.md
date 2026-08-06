@@ -86,3 +86,63 @@ Sources:
 Brand should frame the product at installation, documentation, and store-listing
 surfaces. Inside the working UI, typography, spacing, state, and behavior should
 communicate the product; the Lucitra name can remain as quiet provenance.
+
+## Implementation framework decision
+
+The source of truth is the public
+[`lucitra/ai-bookmark-organizer`](https://github.com/lucitra/ai-bookmark-organizer)
+repository. The popup, organizer workspace, settings, companion, documentation,
+tests, and release automation should evolve there rather than in a second copy
+inside another Lucitra repository.
+
+For the current extension, use the web platform as the UI framework:
+
+- semantic HTML and native form controls for the interaction layer;
+- W3C ARIA Authoring Practices for composite-widget semantics and keyboard
+  behavior;
+- `lucitra.css` for shared product tokens and the surface CSS files for layout;
+- direct, dependency-free DOM code for the current three extension pages.
+
+This is an intentional release decision, not a rejection of reusable
+components. The current UI is a compact Chrome package with highly specific
+organizer, proposal, preview, and chat views. A whole-app component framework
+would add a migration and review surface without replacing that product logic.
+Chrome's Manifest V3 policy also requires all executed JavaScript to ship in the
+extension package, and Chrome notes that more submitted code takes reviewers
+longer to verify.
+
+### Frameworks evaluated
+
+- **Web Awesome Free:** the preferred candidate for a future complex control.
+  It is MIT-licensed, framework-agnostic, self-hostable, and supports importing
+  components individually. Adopt it only for an identified component and bundle
+  every required file locally; do not use its hosted project or CDN loader.
+- **Pico CSS:** useful for small semantic pages and documentation, but not the
+  organizer application foundation. Pico's own usage guidance rates large,
+  component-rich applications as a low fit, and its broad element styles would
+  compete with the existing Lucitra controls.
+- **Spectrum Web Components:** accessible and framework-agnostic, but couples
+  the product to Adobe Spectrum theming and a Lit-based component toolchain.
+  That is unnecessary for the current Lucitra visual language.
+- **React/Radix-style stacks:** strong choices for a new application with a
+  bundler, but a poor incremental fit for the existing direct-DOM extension.
+  Reconsider only if a future workspace is intentionally rebuilt as a separate
+  application surface.
+
+Sources:
+
+- https://www.w3.org/WAI/ARIA/apg/
+- https://developer.chrome.com/docs/extensions/develop/migrate/what-is-mv3
+- https://developer.chrome.com/docs/webstore/review-process
+- https://webawesome.com/docs/
+- https://webawesome.com/license
+- https://picocss.com/docs/usage-scenarios
+- https://opensource.adobe.com/spectrum-web-components/
+
+### Dependency gate
+
+Any UI dependency must have a concrete user-facing reason, an OSI-compatible
+license, a pinned version and update owner, no remote runtime behavior, authored
+or reviewable packaged output, and automated checks proving the release archive
+contains only the expected local files. The dependency must also reduce more
+accessibility or maintenance risk than it introduces.

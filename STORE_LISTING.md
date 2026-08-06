@@ -21,9 +21,16 @@ organization you want, and generate a collection-aware plan. Review an editable
 category and a metadata-grounded reason for every proposed move before applying
 anything.
 
-The organizer checkpoints each completed batch, so a closed or interrupted
-workspace can resume from its latest checkpoint. Apply only selected changes,
-and use Undo last apply to move bookmarks back to their recorded folders.
+Automatic detail scales with the selected collection. Large libraries can use
+two-level folder paths so broad themes stay navigable without forcing hundreds
+of bookmarks into one flat category. Broad AI and investing themes expand into
+more specific leaf folders instead of one catch-all. The organizer makes a
+best-effort folder assignment for every bookmark and clearly holds any unresolved
+item for review.
+
+The organizer writes regular checkpoints, so a closed or interrupted workspace
+can resume from its latest checkpoint. Apply only selected changes, and use Undo
+last apply to move bookmarks back to their recorded folders.
 
 Ask Bookmarks answers questions from saved titles, URLs, folder paths, and
 organizer categories, with links back to relevant bookmarks. It does not fetch
@@ -38,6 +45,11 @@ and separately authorizes each provider in Settings.
 
 - Save and categorize the current page
 - Organize all bookmarks or one selected folder
+- Choose Bookmarks Bar or Other Bookmarks while reusing an existing organized library
+- Scale automatically from a small flat plan to two-level folders for large libraries
+- Expand broad AI and investing themes into granular leaf folders
+- Automatically refine oversized folders and safely merge tiny folders before review
+- Make a best-effort folder assignment for every bookmark
 - Guide organization with a plain-language instruction
 - Pause and resume checkpointed scans
 - Edit every category before applying selected moves
@@ -50,7 +62,7 @@ and separately authorizes each provider in Settings.
 
 Chrome Built-in AI requires Chrome 138 or newer and a supported desktop or
 Chromebook Plus device. If local AI is unavailable, the extension clearly shows
-Fallback and uses deterministic metadata rules.
+Local rules and uses deterministic metadata rules.
 
 ## URLs
 
@@ -149,6 +161,6 @@ provenance used for the Chrome Web Store submission.
     organizer remains available.
 
 If the review device does not support Chrome Built-in AI, the badge shows
-Fallback. Quick-save and organization use deterministic local metadata rules,
+Local rules. Quick-save and organization use deterministic local metadata rules,
 and Ask Bookmarks returns the strongest metadata matches. This is expected and
 is disclosed in the listing.

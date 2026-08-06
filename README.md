@@ -32,12 +32,17 @@ cloud service.
   it without asking you to re-enter its title or URL.
 - Organizes all bookmarks or one selected folder using a collection-aware
   category plan.
+- Automatically scales organization detail with collection size and supports
+  safe two-level folder paths for large libraries. Broad AI and investing
+  themes expand into more specific leaf folders instead of one catch-all.
+- Makes a best-effort folder assignment for every bookmark and prevents selected
+  unresolved items from being applied until they are edited or deselected.
 - Accepts a plain-language organization instruction, such as “separate AI
   infrastructure from design tools and learning resources.”
 - Provides one-click organization presets and can draft an editable instruction
   from the selected scope using Chrome local AI or deterministic metadata rules.
-- Checkpoints every completed batch so an interrupted scan can resume without
-  starting over.
+- Writes regular checkpoints so an interrupted scan can resume without starting
+  over.
 - Shows an editable category and a metadata-grounded reason for every proposed
   move.
 - Moves only selected bookmarks and provides an undo action for the last apply.
@@ -105,15 +110,25 @@ popup. It does not read the page body.
 
 1. Open the popup and select **Open organizer workspace**.
 2. Choose all bookmarks or one folder as the scan scope.
-3. Choose the destination root and maximum number of categories.
+3. Choose the destination root and maximum number of categories. New libraries
+   default to **Bookmarks Bar**; **Other Bookmarks** remains available for a
+   quieter bar. If an organized library already exists, the organizer reuses
+   its current root by default and labels it **Existing library**. To change
+   roots, use **Move existing library here** so a parallel library is not
+   created. Existing folders are never deleted.
 4. Choose an instruction preset, draft one from the selected scope, or describe
    the organization you want in your own words.
 5. Select **Plan and scan**. Large scopes require confirmation.
 6. Pause or close the workspace if needed. Reopening it offers the latest
    completed checkpoint for resumption.
-7. Review every proposed move. Edit categories and deselect anything you do not
-   want moved.
-8. Select **Apply selected**.
+7. Review the before-and-after tree and every proposed move. The tree shows
+   how many selected bookmarks leave each current folder and the exact proposed
+   hierarchy under the destination. Before review, the organizer automatically
+   refines supported oversized folders and safely merges tiny folders in the
+   proposal. The plan health panel explains any broad folders that remain and
+   offers another manual refinement when bookmark metadata supports one. You
+   can also edit categories and deselect anything you do not want moved.
+8. Select **Apply selected** only when the revised plan looks right.
 
 Applied bookmarks move into
 `<destination root>/AI Organized Bookmarks/<Category>`. The extension never
@@ -158,11 +173,13 @@ Claude Code. It does not replace the standalone extension and is off by default.
 The extension requests Chrome's optional `nativeMessaging` permission only when
 you select **Enable Agent Access** in Settings.
 
-The bridge exposes eight bounded bookmark tools: status, summary, folder list,
-metadata search, exact-duplicate review, prepare organization, apply a prepared
-plan, and undo. It cannot fetch linked webpages or delete bookmarks. Agent writes
-remain disabled unless you choose **Allow reviewed changes**; an agent must
-prepare an expiring plan before it can apply moves.
+The bridge exposes nine bounded bookmark tools: status, summary, folder list,
+metadata search, exact-duplicate review, non-writing plan analysis, prepare
+organization, apply a prepared plan, and undo. Plan analysis identifies
+oversized and tiny proposed folders before the client prepares anything. It
+cannot fetch linked webpages or delete bookmarks. Agent writes remain disabled
+unless you choose **Allow reviewed changes**; an agent must prepare an expiring
+plan before it can apply moves.
 
 ### Install the macOS companion
 
@@ -170,7 +187,7 @@ The first companion release supports macOS and Node.js 20 or newer. Find the
 extension ID on its `chrome://extensions` card, then run:
 
 ```bash
-npx --yes @lucitra/bookmark-agent-companion@1.2.0 setup \
+npx --yes @lucitra/bookmark-agent-companion@1.3.6 setup \
   --extension-id YOUR_32_CHARACTER_EXTENSION_ID
 ```
 
@@ -186,7 +203,7 @@ Register the MCP command with Codex:
 
 ```bash
 codex mcp add lucitra-bookmarks -- \
-  npx --yes @lucitra/bookmark-agent-companion@1.2.0 \
+  npx --yes @lucitra/bookmark-agent-companion@1.3.6 \
   mcp --client codex
 ```
 
@@ -194,7 +211,7 @@ Or register it with Claude Code:
 
 ```bash
 claude mcp add --transport stdio --scope user lucitra-bookmarks -- \
-  npx --yes @lucitra/bookmark-agent-companion@1.2.0 \
+  npx --yes @lucitra/bookmark-agent-companion@1.3.6 \
   mcp --client claude
 ```
 
@@ -208,7 +225,7 @@ To revoke access, select **Disable and revoke** in Settings. To remove the nativ
 host registration and its local token completely, run:
 
 ```bash
-npx --yes @lucitra/bookmark-agent-companion@1.2.0 uninstall
+npx --yes @lucitra/bookmark-agent-companion@1.3.6 uninstall
 ```
 
 The full [installation guide](https://lucitra.github.io/ai-bookmark-organizer/installation.html)
@@ -226,7 +243,7 @@ Chrome 138 or newer and supported hardware are required for the Prompt API.
 Chrome documents current requirements in
 [Get started with built-in AI](https://developer.chrome.com/docs/ai/get-started).
 
-If local AI is unavailable, the extension clearly shows **Fallback**. Quick-save
+If local AI is unavailable, the extension clearly shows **Local rules**. Quick-save
 and organization then use deterministic metadata rules. Bookmark Q&A returns
 the strongest metadata matches and category summary instead of a generated
 answer.
@@ -294,12 +311,18 @@ twice and rejects a non-reproducible or unexpected package.
 5. Tag the merged commit with the matching manifest version:
 
    ```bash
-   git tag -a v1.2.0 -m "AI Bookmark Organizer v1.2.0"
-   git push origin v1.2.0
+   git tag -a v1.3.6 -m "AI Bookmark Organizer v1.3.6"
+   git push origin v1.3.6
    ```
 
+6. Approve and verify the npm companion publication, then re-run the Pages
+   workflow. Pages intentionally refuses to deploy an installation guide until
+   its pinned companion version is public.
+
 The release workflow publishes the exact allowlisted package, checksums, and
-build provenance. Do not move an existing version tag.
+build provenance. The npm workflow requires the protected `npm` environment and
+the repository variable `NPM_PUBLISH_ENABLED=true`. Do not move an existing
+version tag.
 
 ## Project files
 

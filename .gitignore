@@ -1,6 +1,9 @@
 .DS_Store
 dist/
 companion/node_modules/
+skills/capture-bookmark-marketing/scripts/node_modules/
+store-assets/generated/
+store-assets/qa/
 
 # Internal design working files are archived outside the public repository.
 brand/claude/

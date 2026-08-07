@@ -14,12 +14,12 @@
         <span>Bookmarks</span>
       </a>
       <nav class="workspace-tabs" aria-label="Bookmark tools">
-        <button class="nav-button is-active" type="button" data-view="organizeView">
+        <a class="nav-button is-active" href="#organize" data-view="organizeView" aria-current="page">
           Organize
-        </button>
-        <button class="nav-button" type="button" data-view="askView">
+        </a>
+        <a class="nav-button" href="#ask" data-view="askView">
           Ask
-        </button>
+        </a>
       </nav>
       <div class="topbar-actions">
         <span id="aiBadge" class="badge badge-muted">Checking AI</span>
@@ -43,26 +43,31 @@
           <div class="page-heading">
             <div>
               <h1 id="organizeTitle">Organize bookmarks</h1>
-              <p>
+              <p id="organizeDescription">
                 Choose a scope, generate a plan, and review every move before applying it.
               </p>
             </div>
-            <button id="undoButton" class="button button-secondary" type="button" hidden>
-              Undo last apply
-            </button>
+            <div class="page-heading-actions">
+              <button id="duplicateReviewButton" class="button button-secondary" type="button">
+                Find duplicates
+              </button>
+              <button id="undoButton" class="button button-secondary" type="button" hidden>
+                Undo last apply
+              </button>
+            </div>
           </div>
 
           <section class="card setup-card" aria-labelledby="setupTitle">
             <div class="section-heading">
               <div>
-                <p class="step-label">Step 1</p>
+                <p id="setupStepLabel" class="step-label">Step 1</p>
                 <h2 id="setupTitle">Choose what to organize</h2>
               </div>
               <span id="scopeCount" class="count-label">Choose a scope</span>
             </div>
 
             <div class="setup-grid">
-              <label class="field">
+              <label class="field scope-field">
                 <span>Bookmark scope</span>
                 <select id="scopeSelect">
                   <option value="">Choose a folder or all bookmarks…</option>
@@ -70,22 +75,31 @@
                 </select>
               </label>
 
-              <label class="field">
-                <span>Destination root</span>
+              <div class="field destination-field">
+                <label for="destinationSelect">Destination root</label>
                 <select id="destinationSelect"></select>
-              </label>
+                <div class="destination-guidance">
+                  <small id="destinationHint">Creates AI Organized Bookmarks here. Existing folders are kept.</small>
+                  <button id="moveLibraryButton" type="button" hidden>
+                    Move existing library here
+                  </button>
+                </div>
+              </div>
 
-              <label class="field">
-                <span>Maximum planned categories</span>
+              <label class="field detail-field">
+                <span>Organization detail</span>
                 <select id="categoryLimit">
-                  <option value="6">6 categories</option>
-                  <option value="8" selected>8 categories</option>
-                  <option value="10">10 categories</option>
-                  <option value="12">12 categories</option>
+                  <option value="auto" selected>Auto — based on collection</option>
+                  <option value="8">Up to 8 leaf folders</option>
+                  <option value="10">Up to 10 leaf folders</option>
+                  <option value="12">Up to 12 leaf folders</option>
+                  <option value="16">Up to 16 leaf folders</option>
+                  <option value="24">Up to 24 leaf folders</option>
+                  <option value="32">Up to 32 leaf folders</option>
                 </select>
               </label>
 
-              <label class="check-field">
+              <label class="check-field organizer-skip-field">
                 <input id="excludeOrganizer" type="checkbox" checked />
                 <span>
                   <strong>Skip previously organized bookmarks</strong>
@@ -141,7 +155,7 @@
               </div>
             </div>
 
-            <label class="field">
+            <label class="field instruction-field">
               <span>Organization instruction</span>
               <textarea
                 id="instructionInput"
@@ -181,7 +195,7 @@
           <section class="card plan-card" aria-labelledby="planTitle">
             <div class="section-heading">
               <div>
-                <p class="step-label">Step 2</p>
+                <p id="planStepLabel" class="step-label">Step 2</p>
                 <h2 id="planTitle">Category plan</h2>
               </div>
               <span id="planCount" class="count-label">Not planned</span>
@@ -189,18 +203,55 @@
             <div id="categoryPlan" class="category-plan empty-copy">
               Categories will appear here before bookmark assignment begins.
             </div>
+            <div id="planVisualization" class="plan-visualization" hidden>
+              <section class="plan-tree-panel" aria-labelledby="currentLocationsTitle">
+                <div class="plan-tree-heading">
+                  <span id="currentLocationsTitle">Current locations</span>
+                  <small id="sourceTreeSummary"></small>
+                </div>
+                <div id="sourceTree" class="move-tree"></div>
+              </section>
+              <div class="plan-direction" aria-hidden="true">→</div>
+              <section class="plan-tree-panel plan-tree-destination" aria-labelledby="proposedDestinationTitle">
+                <div class="plan-tree-heading">
+                  <span id="proposedDestinationTitle">Proposed destination</span>
+                  <small id="destinationTreeSummary"></small>
+                </div>
+                <div id="destinationTree" class="move-tree"></div>
+              </section>
+              <p id="planSafetyNote" class="plan-safety-note">
+                Existing folders are kept. Only selected bookmarks move; unselected bookmarks stay where they are.
+              </p>
+            </div>
+            <div id="categoryHealth" class="category-health" hidden>
+              <div>
+                <strong id="categoryHealthTitle">Plan balance</strong>
+                <p id="categoryHealthText"></p>
+              </div>
+              <div class="category-health-actions">
+                <button id="refineLargeButton" class="button button-secondary" type="button">
+                  Refine large folders
+                </button>
+                <button id="mergeTinyButton" class="button button-secondary" type="button">
+                  Merge tiny folders
+                </button>
+              </div>
+              <p id="categoryHealthNote" class="category-health-note">
+                These actions update the proposal only. Bookmarks move only after you select Apply selected.
+              </p>
+            </div>
           </section>
 
           <section class="card preview-card" aria-labelledby="previewTitle">
             <div class="section-heading preview-toolbar">
               <div>
-                <p class="step-label">Step 3</p>
+                <p id="previewStepLabel" class="step-label">Step 3</p>
                 <h2 id="previewTitle">Review proposed moves</h2>
               </div>
               <div class="preview-actions">
                 <label class="select-all">
                   <input id="selectAll" type="checkbox" checked />
-                  <span>Select all</span>
+                  <span id="selectAllLabel">Select all</span>
                 </label>
                 <span id="previewCount" class="count-label">0 suggestions</span>
                 <button id="applyButton" class="button button-primary" type="button" disabled>
@@ -213,6 +264,12 @@
               Start a scoped scan to see editable categories and metadata-grounded reasons.
             </div>
             <div id="previewList" class="preview-list" aria-live="polite"></div>
+            <div id="previewMore" class="preview-more" hidden>
+              <span id="previewVisibleCount"></span>
+              <button id="loadMoreButton" class="button button-secondary" type="button">
+                Show more
+              </button>
+            </div>
             <datalist id="categoryOptions"></datalist>
           </section>
         </section>

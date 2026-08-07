@@ -240,6 +240,78 @@ async function handleDuplicates(params, policy) {
   }
 }
 
+async function handleAnalyzePlan(params, policy) {
+  const assignments = Array.isArray(params?.assignments) ? params.assignments : []
+  if (assignments.length === 0) {
+    throw requestError('EMPTY_PLAN', 'At least one bookmark assignment is required.')
+  }
+  if (assignments.length > AgentCore.MAX_PLAN_ASSIGNMENTS) {
+    throw requestError('PLAN_TOO_LARGE', `A plan can contain at most ${AgentCore.MAX_PLAN_ASSIGNMENTS} assignments.`)
+  }
+
+  const scope = await loadScope(policy, params?.scopeId)
+  const bookmarkMap = new Map(scope.bookmarks.map((bookmark) => [bookmark.id, bookmark]))
+  const suggestions = []
+  const seen = new Set()
+
+  for (const assignment of assignments) {
+    const bookmarkId = String(assignment?.bookmarkId || '')
+    if (!bookmarkId || seen.has(bookmarkId)) continue
+    const bookmark = bookmarkMap.get(bookmarkId)
+    if (!bookmark) {
+      throw requestError('BOOKMARK_NOT_ALLOWED', `Bookmark ${bookmarkId} is outside the approved scope or no longer exists.`)
+    }
+    seen.add(bookmarkId)
+    suggestions.push({
+      ...bookmark,
+      category: Organizer.sanitizeCategoryPath(assignment?.category),
+    })
+  }
+
+  const broadThreshold = boundedInteger(params?.broadThreshold, undefined, 20, 2_000)
+  const tinyThreshold = boundedInteger(params?.tinyThreshold, undefined, 0, 20)
+  const health = Organizer.analyzeCategoryHealth(suggestions, {
+    ...(broadThreshold === undefined ? {} : { broadThreshold }),
+    ...(tinyThreshold === undefined ? {} : { tinyThreshold }),
+  })
+  const merges = Organizer.recommendTinyCategoryMerges(suggestions, {
+    broadThreshold: health.broadThreshold,
+    tinyThreshold: health.tinyThreshold,
+  })
+  const automaticImprovement = Organizer.improveCategorySuggestions(suggestions, {
+    broadThreshold: health.broadThreshold,
+    tinyThreshold: health.tinyThreshold,
+  })
+
+  return {
+    scopeId: scope.scopeId,
+    assignmentCount: suggestions.length,
+    thresholds: {
+      broad: health.broadThreshold,
+      tiny: health.tinyThreshold,
+    },
+    categories: health.categories,
+    broadCategories: health.broad.map((item) => ({
+      ...item,
+      suggestedFolders: Organizer.categoryRefinementOptions(item.category),
+      sample: suggestions
+        .filter((suggestion) => suggestion.category === item.category)
+        .slice(0, 10)
+        .map(recordForAgent),
+    })),
+    tinyCategories: health.tiny,
+    recommendedMerges: merges,
+    automaticImprovement: {
+      refinedFolders: automaticImprovement.refinedFolders,
+      refinedBookmarks: automaticImprovement.refinedBookmarks,
+      mergedFolders: automaticImprovement.mergedFolders,
+      mergedBookmarks: automaticImprovement.mergedBookmarks,
+      resultingCategories: Organizer.categoryCounts(automaticImprovement.suggestions),
+    },
+    message: 'Plan analyzed. No plan was stored and no bookmarks moved.',
+  }
+}
+
 async function handlePrepareOrganization(params, policy, client) {
   const assignments = Array.isArray(params?.assignments) ? params.assignments : []
   if (assignments.length === 0) {
@@ -279,7 +351,7 @@ async function handlePrepareOrganization(params, policy, client) {
       bookmarkId,
       title: bookmark.title || bookmark.url,
       fromParentId: bookmark.parentId,
-      category: Organizer.sanitizeCategory(assignment?.category),
+      category: Organizer.sanitizeCategoryPath(assignment?.category),
     })
   }
 
@@ -350,17 +422,23 @@ async function handleApplyPlan(params, policy, client) {
       continue
     }
 
-    let folder = folders.get(assignment.category)
-    if (!folder) {
-      folder = await Organizer.findOrCreateFolder(plan.destinationRootId, assignment.category)
-      folders.set(assignment.category, folder)
+    let parentId = plan.destinationRootId
+    const partialPath = []
+    for (const folderName of Organizer.splitCategoryPath(assignment.category)) {
+      partialPath.push(folderName)
+      const pathKey = partialPath.join(Organizer.CATEGORY_SEPARATOR)
+      if (!folders.has(pathKey)) {
+        const folder = await Organizer.findOrCreateFolder(parentId, folderName)
+        folders.set(pathKey, folder.id)
+      }
+      parentId = folders.get(pathKey)
     }
-    await Organizer.moveBookmark(assignment.bookmarkId, { parentId: folder.id })
+    await Organizer.moveBookmark(assignment.bookmarkId, { parentId })
     entries.push({
       bookmarkId: assignment.bookmarkId,
       title: assignment.title,
       fromParentId: assignment.fromParentId,
-      toParentId: folder.id,
+      toParentId: parentId,
       category: assignment.category,
     })
   }
@@ -426,6 +504,8 @@ async function dispatchRequest(request, authorization) {
       return handleSearch(params, authorization.policy)
     case 'bookmarks.find_duplicates':
       return handleDuplicates(params, authorization.policy)
+    case 'bookmarks.analyze_plan':
+      return handleAnalyzePlan(params, authorization.policy)
     case 'bookmarks.prepare_organization':
       return handlePrepareOrganization(params, authorization.policy, authorization.client)
     case 'bookmarks.apply_plan':

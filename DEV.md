@@ -77,14 +77,46 @@ functional test.
   Messaging permission does not affect standalone organizer behavior.
 - Enabling Agent Access connects only to the installed `ai.lucitra.bookmarks`
   native host, and disabling it revokes the optional Chrome permission.
-- Folder scope is enforced in Chrome for summary, search, duplicate review, and
-  organization plans.
+- Folder scope is enforced in Chrome for summary, search, duplicate review,
+  plan-health analysis, and organization plans.
+- Plan analysis is non-writing. Prepared MCP plans support at most 2,000
+  assignments and 40 two-level leaf folders; only apply creates folders or
+  moves bookmarks.
 - Codex and Claude requests remain blocked until the matching provider has
   current explicit consent.
 - An agent cannot apply arbitrary moves: it must apply an unexpired prepared
   plan, each bookmark must still be in its recorded original folder, and the
   resulting transaction is undoable.
 - Agent tools never fetch linked webpages or delete bookmarks.
+
+## UI architecture
+
+The extension deliberately uses the browser's native controls, the shared
+Lucitra tokens in `lucitra.css`, and small surface-specific styles. Treat that
+combination as the product UI foundation rather than introducing a page
+framework independently in the popup, workspace, or settings.
+
+For new UI:
+
+1. Prefer semantic HTML and native controls. They provide the smallest packaged
+   surface and keep browser keyboard and accessibility behavior intact.
+2. For a composite widget such as tabs, a menu, dialog, or tree, follow the
+   corresponding [W3C ARIA Authoring Practices pattern](https://www.w3.org/WAI/ARIA/apg/patterns/)
+   and add keyboard-focused acceptance coverage.
+3. Reuse or extend Lucitra semantic tokens before adding one-off visual values.
+4. If native HTML cannot provide the required interaction, evaluate a single
+   locally bundled component before adopting a complete runtime. Web Awesome
+   Free is the first candidate because it is framework-agnostic, can be
+   self-hosted, and permits cherry-picked component imports. Its code and
+   license notice must be included in the repository and the Web Store ZIP.
+5. Never load a framework, component, font, icon, or theme from a CDN. Manifest
+   V3 runtime code must remain entirely inside the reviewed extension package.
+
+The rationale and framework comparison are recorded in
+`research/PRODUCT_UI_PATTERNS.md`. A React, Vue, Spectrum, Web Awesome, or other
+whole-app migration requires its own proposal with package-size, accessibility,
+upgrade, CSP, and visual-regression evidence. It is not a prerequisite for
+shipping the current standalone organizer.
 
 ## Package policy
 
@@ -169,6 +201,22 @@ The first manual publish is the only unautomated exception. Later `vX.Y.Z` tags
 publish the matching extension release and npm companion from GitHub Actions;
 npm generates provenance for the trusted publication.
 
+GitHub Pages also fails closed when the companion version pinned by the
+installation guide is not available from npm. For a release that changes the
+companion version, use this order:
+
+1. Merge the reviewed release commit to `main`. The Pages build may remain
+   blocked while the previous public guide stays live.
+2. Create and push the matching `vX.Y.Z` tag.
+3. Approve the protected `npm` environment deployment and confirm the npm
+   publish workflow succeeds.
+4. Re-run the Pages workflow after npm serves the new version. Confirm the
+   installation page and download link before beginning Web Store submission.
+
+The repository variable `NPM_PUBLISH_ENABLED` must be set to `true` for tagged
+publishing. A manual workflow dispatch remains available for an intentional
+recovery, but it is not a substitute for the protected release path.
+
 The cross-product chat contract lives in
 [`research/CHAT_SYSTEM_DEFAULTS.md`](./research/CHAT_SYSTEM_DEFAULTS.md). Keep
 the data model and user controls consistent when another Lucitra chat surface is
@@ -178,8 +226,8 @@ introduced; share code only once a second implementation proves the common API.
 
 ```bash
 ./scripts/build-release.sh
-unzip -Z1 dist/ai-bookmark-organizer-1.2.0.zip
-shasum -a 256 dist/ai-bookmark-organizer-1.2.0.zip
+unzip -Z1 dist/ai-bookmark-organizer-1.3.6.zip
+shasum -a 256 dist/ai-bookmark-organizer-1.3.6.zip
 ```
 
 Never load `dist/` itself as an unpacked extension. Unzip the versioned archive

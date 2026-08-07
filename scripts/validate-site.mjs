@@ -126,8 +126,8 @@ for (const requiredHref of [
 }
 
 for (const requiredValue of [
-  '@lucitra/bookmark-agent-companion@1.2.0 setup',
-  '@lucitra/bookmark-agent-companion@1.2.0 doctor',
+  '@lucitra/bookmark-agent-companion@1.3.6 setup',
+  '@lucitra/bookmark-agent-companion@1.3.6 doctor',
   'codex mcp add lucitra-bookmarks',
   'claude mcp add --transport stdio',
   'chrome://extensions',

@@ -167,7 +167,7 @@
               Replace <code>YOUR_EXTENSION_ID</code> with the value from the previous step. The
               command installs an owner-only runtime and registers Chrome's local native host.
             </p>
-            <pre class="command-block"><code>npx --yes @lucitra/bookmark-agent-companion@1.2.0 setup \
+            <pre class="command-block"><code>npx --yes @lucitra/bookmark-agent-companion@1.3.6 setup \
   --extension-id YOUR_EXTENSION_ID</code></pre>
             <div class="command-notes">
               <div>
@@ -222,7 +222,7 @@
                   <h3 id="codexClientTitle">Codex</h3>
                 </div>
                 <pre class="command-block"><code>codex mcp add lucitra-bookmarks -- \
-  npx --yes @lucitra/bookmark-agent-companion@1.2.0 \
+  npx --yes @lucitra/bookmark-agent-companion@1.3.6 \
   mcp --client codex</code></pre>
                 <p>Then enable <strong>Codex</strong> under External AI processing in extension Settings.</p>
               </section>
@@ -233,7 +233,7 @@
                 </div>
                 <pre class="command-block"><code>claude mcp add --transport stdio --scope user \
   lucitra-bookmarks -- \
-  npx --yes @lucitra/bookmark-agent-companion@1.2.0 \
+  npx --yes @lucitra/bookmark-agent-companion@1.3.6 \
   mcp --client claude</code></pre>
                 <p>Then enable <strong>Claude</strong> under External AI processing in extension Settings.</p>
               </section>
@@ -252,7 +252,7 @@
                 <h2>Confirm the local installation</h2>
               </div>
             </div>
-            <pre class="command-block"><code>npx --yes @lucitra/bookmark-agent-companion@1.2.0 doctor</code></pre>
+            <pre class="command-block"><code>npx --yes @lucitra/bookmark-agent-companion@1.3.6 doctor</code></pre>
             <p>The command checks:</p>
             <ul class="verification-list">
               <li>Local configuration and owner-only permissions</li>
@@ -292,9 +292,10 @@
               </div>
             </div>
             <p>
-              Agent tools can search bookmark titles, URLs, hosts, and folder paths. They cannot
-              fetch linked pages or delete bookmarks. Writes require a reviewed policy, an
-              expiring prepared plan, and a matching client and folder scope.
+              Agent tools can search bookmark titles, URLs, hosts, and folder paths, and analyze
+              proposed categories for oversized or tiny folders before a plan is stored. They
+              cannot fetch linked pages or delete bookmarks. Writes require a reviewed policy,
+              an expiring prepared plan, and a matching client and folder scope.
             </p>
             <a
               class="text-link"
@@ -317,7 +318,7 @@
               optional permission and external provider approvals.
             </p>
             <h3>Uninstall</h3>
-            <pre class="command-block"><code>npx --yes @lucitra/bookmark-agent-companion@1.2.0 uninstall</code></pre>
+            <pre class="command-block"><code>npx --yes @lucitra/bookmark-agent-companion@1.3.6 uninstall</code></pre>
             <p>
               This removes the per-user Native Messaging registration, local authentication token,
               and copied runtime. It does not remove or change bookmarks.

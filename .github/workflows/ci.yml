@@ -4,13 +4,14 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
   validate:
-    name: Validate site and extension
+    name: Validate extension
     runs-on: ubuntu-latest
     steps:
       - name: Check out source

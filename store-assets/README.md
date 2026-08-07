@@ -15,7 +15,36 @@ The editable SVG sources are committed beside the exported PNG files.
 The padded store icon source is `store-assets/icon.svg`. The extension's
 production mark remains `brand/logo.svg`.
 
-`screenshot-1.png` captures an older interface and must not be submitted for
-v1.2. Capture replacement images from a real installed build after isolated
-Chrome QA, including Agent Access settings with its default Off state; never
-fabricate or composite product screenshots.
+## Rebuilding product screenshots
+
+The repository includes a project-specific real-Chrome capture harness at
+`skills/capture-bookmark-marketing/`. It loads the actual unpacked extension in
+an isolated Chrome for Testing profile, creates synthetic public bookmarks,
+runs the real scan/chat/apply flows, and captures the resulting product UI. It
+never opens the developer's normal Chrome profile.
+
+From the repository root:
+
+```bash
+npm --prefix skills/capture-bookmark-marketing/scripts ci
+npm --prefix skills/capture-bookmark-marketing/scripts run qa:large
+npm --prefix skills/capture-bookmark-marketing/scripts run qa:ask-large
+npm --prefix skills/capture-bookmark-marketing/scripts run capture
+npm --prefix skills/capture-bookmark-marketing/scripts run verify
+```
+
+Review every file under `store-assets/generated/`. After visual approval,
+promote the verified set into the submission filenames:
+
+```bash
+npm --prefix skills/capture-bookmark-marketing/scripts run promote
+```
+
+The required images show the populated organizer preview, a grounded duplicate
+review in chat, Agent Access in its default Off state, and a successful apply.
+When Chrome permits internal-page automation, the fifth image shows the real
+resulting folder structure in `chrome://bookmarks`.
+
+Never fabricate, composite, retouch, or populate screenshots with personal
+bookmark data. The exact capture contract is documented in
+`skills/capture-bookmark-marketing/references/capture-contract.md`.

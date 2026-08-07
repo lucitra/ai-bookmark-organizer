@@ -1,0 +1,4 @@
+interface:
+  display_name: "Capture Bookmark Marketing"
+  short_description: "Capture real bookmark product screenshots"
+  default_prompt: "Use $capture-bookmark-marketing to create and verify the current AI Bookmark Organizer marketing screenshots."

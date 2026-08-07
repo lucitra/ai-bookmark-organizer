@@ -1,4 +1,4 @@
-# Chrome Web Store Submission — v1.2.0
+# Chrome Web Store Submission — v1.3.6
 
 Work down this page in order. Listing values below are copied from
 `STORE_LISTING.md`; do not reword permission justifications or the single-purpose
@@ -6,16 +6,17 @@ statement in the dashboard.
 
 ## 1. Release gate
 
-- **Package:** `dist/ai-bookmark-organizer-1.2.0.zip`
-- **Manifest version:** `1.2.0`
+- **Package:** `dist/ai-bookmark-organizer-1.3.6.zip`
+- **Manifest version:** `1.3.6`
 - **Visibility:** Public
 - **Privacy page:**
   `https://lucitra.ai/tools/ai-bookmark-organizer/privacy/` is live and discloses
   Agent Access, optional Native Messaging, external provider consent, data
   scope, and revocation.
-- **BLOCKED — screenshots:** `store-assets/screenshot-1.png` shows an older UI.
-  Replace it with real v1.2 captures of quick save, populated organizer preview,
-  Ask Bookmarks with sources, Agent Access settings, and the resulting
+- **Screenshots ready:** `store-assets/screenshot-1.png` through
+  `store-assets/screenshot-5.png` are verified 1280×800 real-Chrome captures of
+  the populated organizer preview, grounded duplicate review, Agent Access in
+  its default Off state, successful Apply state, and the resulting
   `chrome://bookmarks` folder structure.
 - **BLOCKED — Privacy practices category mapping:** confirm the current Web Store
   user-data category selections for bookmark titles, URLs, folder paths,
@@ -25,9 +26,17 @@ statement in the dashboard.
 - **BLOCKED — platform support copy:** the companion installer currently supports
   macOS only. Keep Agent Access described as optional; do not imply Windows or
   Linux companion support until installers exist.
+- **BLOCKED — companion package 1.3.6:** the public npm registry currently serves
+  `@lucitra/bookmark-agent-companion@1.2.0`, while the 1.3.6 documentation pins
+  `@lucitra/bookmark-agent-companion@1.3.6`. The repository has a trusted npm
+  publishing workflow and an `npm` GitHub environment, but the required
+  `NPM_PUBLISH_ENABLED=true` repository variable is not configured. Confirm the
+  npm trusted-publisher settings, set the variable, publish the 1.3.6 tag, and
+  verify the package before re-running the guarded Pages deployment.
 
-Do not submit the package until the screenshots are current, the dashboard
-category mapping is resolved, and isolated Chrome QA passes.
+Do not submit the package until the dashboard category mapping and release
+blockers are resolved. Isolated Chrome QA has passed against the exact 1.3.6
+release ZIP.
 
 ## 2. Store listing
 
@@ -58,9 +67,20 @@ organization you want, and generate a collection-aware plan. Review an editable
 category and a metadata-grounded reason for every proposed move before applying
 anything.
 
-The organizer checkpoints each completed batch, so a closed or interrupted
-workspace can resume from its latest checkpoint. Apply only selected changes,
-and use Undo last apply to move bookmarks back to their recorded folders.
+Automatic detail scales with the selected collection. Large libraries can use
+two-level folder paths so broad themes stay navigable without forcing hundreds
+of bookmarks into one flat category. Broad AI and investing themes expand into
+more specific leaf folders instead of one catch-all. The organizer makes a
+best-effort folder assignment for every bookmark and clearly holds any unresolved
+item for review.
+
+The organizer writes regular checkpoints, so a closed or interrupted workspace
+can resume from its latest checkpoint. Apply only selected changes, and use Undo
+last apply to move bookmarks back to their recorded folders.
+
+Find duplicates groups exact canonical-URL matches into a dedicated review. See
+which copy will stay, choose a different keeper when needed, and move only
+confirmed extras into Duplicate Review. Nothing is deleted.
 
 Ask Bookmarks answers questions from saved titles, URLs, folder paths, and
 organizer categories, with links back to relevant bookmarks. It does not fetch
@@ -75,9 +95,15 @@ and separately authorizes each provider in Settings.
 
 - Save and categorize the current page
 - Organize all bookmarks or one selected folder
+- Choose Bookmarks Bar or Other Bookmarks while reusing an existing organized library
+- Scale automatically from a small flat plan to two-level folders for large libraries
+- Expand broad AI and investing themes into granular leaf folders
+- Automatically refine oversized folders and safely merge tiny folders before review
+- Make a best-effort folder assignment for every bookmark
 - Guide organization with a plain-language instruction
 - Pause and resume checkpointed scans
 - Edit every category before applying selected moves
+- Review duplicate groups, choose the keeper, and move only confirmed extras
 - Undo the last set of bookmark moves
 - Ask metadata-grounded questions with bookmark source links
 - No Lucitra account, API key, subscription, analytics, or required cloud AI
@@ -87,7 +113,7 @@ and separately authorizes each provider in Settings.
 
 Chrome Built-in AI requires Chrome 138 or newer and a supported desktop or
 Chromebook Plus device. If local AI is unavailable, the extension clearly shows
-Fallback and uses deterministic metadata rules.
+Local rules and uses deterministic metadata rules.
 
 ## 3. URLs
 
@@ -181,12 +207,13 @@ Free
 | Dashboard field | File | Dimensions | Status |
 | --- | --- | ---: | --- |
 | Store icon | `store-assets/icon-128.png` | 128×128 PNG | Ready |
-| Screenshot 1 | `store-assets/screenshot-1.png` | 1280×800 PNG | BLOCKED — older UI |
+| Screenshot 1 | `store-assets/screenshot-1.png` | 1280×800 PNG | Ready — organizer preview |
+| Screenshot 2 | `store-assets/screenshot-2.png` | 1280×800 PNG | Ready — duplicate review |
+| Screenshot 3 | `store-assets/screenshot-3.png` | 1280×800 PNG | Ready — Agent Access Off |
+| Screenshot 4 | `store-assets/screenshot-4.png` | 1280×800 PNG | Ready — successful apply |
+| Screenshot 5 | `store-assets/screenshot-5.png` | 1280×800 PNG | Ready — Chrome folder result |
 | Small promo tile | `store-assets/small-promo.png` | 440×280 PNG | Ready |
 | Marquee promo tile | `store-assets/marquee.png` | 1400×560 PNG | Ready, optional |
-
-Capture replacement screenshots at exactly 1280×800 with square corners and
-full bleed. Do not fabricate or composite product UI.
 
 ## 7. Reviewer test instructions
 
@@ -210,6 +237,6 @@ full bleed. Do not fabricate or composite product UI.
     organizer remains available.
 
 If the review device does not support Chrome Built-in AI, the badge shows
-Fallback. Quick-save and organization use deterministic local metadata rules,
+Local rules. Quick-save and organization use deterministic local metadata rules,
 and Ask Bookmarks returns the strongest metadata matches. This is expected and
 is disclosed in the listing.

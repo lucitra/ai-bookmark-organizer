@@ -2,15 +2,24 @@
 
 const Organizer = globalThis.BookmarkOrganizer
 const ASSIGNMENT_BATCH_SIZE = 12
+const AI_PLANNING_BOOKMARK_LIMIT = 400
+const PREVIEW_PAGE_SIZE = 200
 const CHAT_HISTORY_LIMIT = 20
 const CHAT_THREAD_LIMIT = 12
 
 const elements = {
   aiBadge: document.getElementById('aiBadge'),
+  organizeView: document.getElementById('organizeView'),
+  organizeTitle: document.getElementById('organizeTitle'),
+  organizeDescription: document.getElementById('organizeDescription'),
+  setupStepLabel: document.getElementById('setupStepLabel'),
+  setupTitle: document.getElementById('setupTitle'),
   scopeSelect: document.getElementById('scopeSelect'),
   askScopeSelect: document.getElementById('askScopeSelect'),
   askScopeCount: document.getElementById('askScopeCount'),
   destinationSelect: document.getElementById('destinationSelect'),
+  destinationHint: document.getElementById('destinationHint'),
+  moveLibraryButton: document.getElementById('moveLibraryButton'),
   categoryLimit: document.getElementById('categoryLimit'),
   excludeOrganizer: document.getElementById('excludeOrganizer'),
   instructionInput: document.getElementById('instructionInput'),
@@ -20,18 +29,39 @@ const elements = {
   pauseButton: document.getElementById('pauseButton'),
   resumeButton: document.getElementById('resumeButton'),
   cancelButton: document.getElementById('cancelButton'),
+  duplicateReviewButton: document.getElementById('duplicateReviewButton'),
   undoButton: document.getElementById('undoButton'),
   statusDot: document.getElementById('statusDot'),
   statusText: document.getElementById('statusText'),
   progressBar: document.getElementById('progressBar'),
   progressLabel: document.getElementById('progressLabel'),
   categoryPlan: document.getElementById('categoryPlan'),
+  planStepLabel: document.getElementById('planStepLabel'),
+  planTitle: document.getElementById('planTitle'),
   planCount: document.getElementById('planCount'),
+  planVisualization: document.getElementById('planVisualization'),
+  sourceTreeSummary: document.getElementById('sourceTreeSummary'),
+  sourceTree: document.getElementById('sourceTree'),
+  destinationTreeSummary: document.getElementById('destinationTreeSummary'),
+  destinationTree: document.getElementById('destinationTree'),
+  planSafetyNote: document.getElementById('planSafetyNote'),
+  categoryHealth: document.getElementById('categoryHealth'),
+  categoryHealthTitle: document.getElementById('categoryHealthTitle'),
+  categoryHealthText: document.getElementById('categoryHealthText'),
+  categoryHealthNote: document.getElementById('categoryHealthNote'),
+  refineLargeButton: document.getElementById('refineLargeButton'),
+  mergeTinyButton: document.getElementById('mergeTinyButton'),
   categoryOptions: document.getElementById('categoryOptions'),
   previewCount: document.getElementById('previewCount'),
+  previewStepLabel: document.getElementById('previewStepLabel'),
+  previewTitle: document.getElementById('previewTitle'),
   previewList: document.getElementById('previewList'),
   previewEmpty: document.getElementById('previewEmpty'),
+  previewMore: document.getElementById('previewMore'),
+  previewVisibleCount: document.getElementById('previewVisibleCount'),
+  loadMoreButton: document.getElementById('loadMoreButton'),
   selectAll: document.getElementById('selectAll'),
+  selectAllLabel: document.getElementById('selectAllLabel'),
   applyButton: document.getElementById('applyButton'),
   questionInput: document.getElementById('questionInput'),
   askButton: document.getElementById('askButton'),
@@ -53,23 +83,21 @@ const workspaceState = {
   applyHistory: null,
   running: false,
   applying: false,
+  relocatingLibrary: false,
   draftingInstruction: false,
+  refiningPlan: false,
   asking: false,
   pendingAssistant: false,
   pauseRequested: false,
   cancelRequested: false,
   abortController: null,
   session: null,
+  destinationExplicitlySelected: false,
+  previewRenderLimit: PREVIEW_PAGE_SIZE,
 }
 
 document.addEventListener('DOMContentLoaded', initialize)
 globalThis.addEventListener('hashchange', showRequestedView)
-document.querySelectorAll('.nav-button').forEach((button) => {
-  button.addEventListener('click', () => {
-    globalThis.location.hash = button.dataset.view === 'askView' ? 'ask' : 'organize'
-    showView(button.dataset.view)
-  })
-})
 document.querySelectorAll('[data-question]').forEach((button) => {
   button.addEventListener('click', () => {
     if (workspaceState.asking) return
@@ -90,6 +118,8 @@ document.querySelectorAll('[data-organizer-instruction]').forEach((button) => {
 })
 
 elements.scopeSelect.addEventListener('change', updateScopeCount)
+elements.destinationSelect.addEventListener('change', handleDestinationChange)
+elements.moveLibraryButton.addEventListener('click', moveExistingLibraryToDestination)
 elements.askScopeSelect.addEventListener('change', handleAskScopeChange)
 elements.excludeOrganizer.addEventListener('change', updateScopeCount)
 elements.draftInstructionButton.addEventListener('click', draftInstructionFromScope)
@@ -97,10 +127,15 @@ elements.startButton.addEventListener('click', startScan)
 elements.pauseButton.addEventListener('click', pauseScan)
 elements.resumeButton.addEventListener('click', resumeScan)
 elements.cancelButton.addEventListener('click', cancelScan)
+elements.duplicateReviewButton.addEventListener('click', startDuplicateReview)
+elements.refineLargeButton.addEventListener('click', refineLargeCategories)
+elements.mergeTinyButton.addEventListener('click', mergeTinyCategories)
 elements.applyButton.addEventListener('click', applySelected)
 elements.undoButton.addEventListener('click', undoLastApply)
 elements.selectAll.addEventListener('change', selectAllSuggestions)
 elements.previewList.addEventListener('change', handlePreviewChange)
+elements.previewList.addEventListener('click', handleDuplicatePreviewClick)
+elements.loadMoreButton.addEventListener('click', showMorePreviewRows)
 elements.askButton.addEventListener('click', askBookmarks)
 elements.newChatButton.addEventListener('click', newConversation)
 elements.clearChatButton.addEventListener('click', clearConversation)
@@ -133,7 +168,19 @@ async function initialize() {
       (folder) => !folder.unmodifiable,
     )
     workspaceState.applyHistory = applyHistory || null
-    updateAiBadge(aiInfo)
+    const priorModelCrash = savedJob?.localAiFallback?.message
+      ? await Organizer.recordAiRuntimeFailure(
+          new Error(savedJob.localAiFallback.message),
+        )
+      : false
+    updateAiBadge(
+      priorModelCrash
+        ? {
+            available: false,
+            message: 'Chrome’s local model previously crashed. Local rules remain active while the Chrome model runtime recovers.',
+          }
+        : aiInfo,
+    )
     renderFolderOptions()
     const chatStoreNeedsWrite = restoreChatThreads(savedChatThreads, savedChat)
     restoreActiveThreadScope()
@@ -146,6 +193,40 @@ async function initialize() {
 
     if (savedJob?.version === 1) {
       workspaceState.job = savedJob
+      if (isLegacyDuplicateReviewJob(savedJob)) {
+        const bookmarks = Organizer.collectBookmarks(tree, {
+          scopeId: savedJob.scopeId || 'all',
+          excludeOrganizer: false,
+        }).filter((bookmark) => !isDuplicateReviewBookmark(bookmark))
+        const groups = Organizer.findDuplicateGroups(bookmarks)
+        if (groups.length > 0) {
+          const duplicateCount = groups.reduce(
+            (total, group) => total + group.duplicates.length,
+            0,
+          )
+          workspaceState.job.mode = 'duplicate_review'
+          workspaceState.job.suggestions = duplicateSuggestionsFromGroups(groups)
+          workspaceState.job.bookmarkIds = workspaceState.job.suggestions.map(
+            (suggestion) => suggestion.id,
+          )
+          workspaceState.job.processedIds = [...workspaceState.job.bookmarkIds]
+          workspaceState.job.total = duplicateCount
+          workspaceState.job.statusMessage = `Updated this cleanup to show ${groups.length.toLocaleString()} duplicate group${groups.length === 1 ? '' : 's'} and the copy kept in each group. Nothing has moved yet.`
+          workspaceState.job.updatedAt = new Date().toISOString()
+          await persistJob()
+        }
+      }
+      const defaultDestination = Organizer.getDefaultDestinationRoot(tree)
+      if (Organizer.shouldMigrateLegacyDestination(savedJob, tree)) {
+        workspaceState.job.destinationRootId = defaultDestination.id
+        workspaceState.job.destinationSelectionSource = 'migrated-default'
+        workspaceState.job.statusMessage =
+          'Destination updated to Bookmarks Bar for the new default. Review the proposed tree before applying.'
+        workspaceState.job.updatedAt = new Date().toISOString()
+        await persistJob()
+      }
+      workspaceState.destinationExplicitlySelected =
+        workspaceState.job.destinationSelectionSource === 'user'
       if (['planning', 'running', 'pausing'].includes(savedJob.status)) {
         workspaceState.job.status = 'paused'
         workspaceState.job.statusMessage =
@@ -289,14 +370,49 @@ function showView(viewId) {
     view.hidden = view.id !== viewId
   })
   document.querySelectorAll('.nav-button').forEach((button) => {
-    button.classList.toggle('is-active', button.dataset.view === viewId)
+    const active = button.dataset.view === viewId
+    button.classList.toggle('is-active', active)
+    if (active) button.setAttribute('aria-current', 'page')
+    else button.removeAttribute('aria-current')
   })
 }
 
 function renderFolderOptions() {
+  const previousScope = elements.scopeSelect.value
+  const previousAskScope = elements.askScopeSelect.value || 'all'
+  const previousDestination = elements.destinationSelect.value
   const defaultRoot = Organizer.getDefaultDestinationRoot(workspaceState.tree)
+  const organizerRootIds = new Set(
+    Organizer.findOrganizerFolders(workspaceState.tree).map((folder) => String(folder.parentId)),
+  )
+  const hasExistingLibrary = organizerRootIds.size > 0
+
+  elements.scopeSelect.replaceChildren()
+  elements.askScopeSelect.replaceChildren()
+  elements.destinationSelect.replaceChildren()
+
+  const scopePlaceholder = document.createElement('option')
+  scopePlaceholder.value = ''
+  scopePlaceholder.textContent = 'Choose a folder or all bookmarks…'
+  elements.scopeSelect.append(scopePlaceholder)
+  const allScope = document.createElement('option')
+  allScope.value = 'all'
+  allScope.textContent = 'All bookmarks'
+  elements.scopeSelect.append(allScope)
+  const allAskScope = document.createElement('option')
+  allAskScope.value = 'all'
+  allAskScope.textContent = 'All bookmarks'
+  elements.askScopeSelect.append(allAskScope)
 
   for (const folder of workspaceState.folders) {
+    let destinationSuffix = ''
+    if (organizerRootIds.has(String(folder.id))) {
+      destinationSuffix = ' — Existing library'
+    } else if (!hasExistingLibrary && String(folder.id) === String(defaultRoot?.id)) {
+      destinationSuffix = ' — Recommended'
+    } else if (/other bookmarks/i.test(folder.title || '')) {
+      destinationSuffix = ' — Keeps the bar minimal'
+    }
     const label = `${'— '.repeat(Math.max(0, folder.depth - 1))}${folder.path}`
 
     const scopeOption = document.createElement('option')
@@ -311,10 +427,87 @@ function renderFolderOptions() {
 
     const destinationOption = document.createElement('option')
     destinationOption.value = folder.id
-    destinationOption.textContent = label
-    destinationOption.selected = folder.id === defaultRoot?.id
+    destinationOption.textContent = `${label}${destinationSuffix}`
     elements.destinationSelect.append(destinationOption)
   }
+
+  const folderIds = new Set(workspaceState.folders.map((folder) => String(folder.id)))
+  elements.scopeSelect.value = previousScope === 'all' || folderIds.has(previousScope)
+    ? previousScope
+    : ''
+  elements.askScopeSelect.value = previousAskScope === 'all' || folderIds.has(previousAskScope)
+    ? previousAskScope
+    : 'all'
+  elements.destinationSelect.value = folderIds.has(previousDestination)
+    ? previousDestination
+    : String(defaultRoot?.id || '')
+  renderDestinationGuidance()
+}
+
+async function refreshBookmarkTreeAndFolders() {
+  workspaceState.tree = await Organizer.getBookmarkTree()
+  workspaceState.folders = Organizer.collectFolderOptions(workspaceState.tree).filter(
+    (folder) => !folder.unmodifiable,
+  )
+  renderFolderOptions()
+  if (workspaceState.job) restoreJobControls()
+}
+
+function organizerLibraryLocations() {
+  return Organizer.findOrganizerFolders(workspaceState.tree).map((folder) => ({
+    ...folder,
+    root: workspaceState.folders.find(
+      (candidate) => String(candidate.id) === String(folder.parentId),
+    ) || null,
+  }))
+}
+
+function hasOrganizerDestinationConflict(destinationRootId = elements.destinationSelect.value) {
+  const locations = organizerLibraryLocations()
+  return locations.length > 0 && !locations.some(
+    (location) => String(location.parentId) === String(destinationRootId),
+  )
+}
+
+function renderDestinationGuidance() {
+  const destinationRootId = elements.destinationSelect.value
+  const destination = getDestinationFolder(destinationRootId)
+  const locations = organizerLibraryLocations()
+  const current = locations.find(
+    (location) => String(location.parentId) === String(destinationRootId),
+  )
+  const guidance = elements.destinationHint.closest('.destination-guidance')
+  guidance.classList.remove('is-warning')
+  elements.moveLibraryButton.hidden = true
+
+  if (locations.length === 0) {
+    elements.destinationHint.textContent = isDuplicateReviewJob()
+      ? `Selected extras move to ${destination?.path || 'this location'} / ${Organizer.ORGANIZER_FOLDER_NAME} / Duplicate Review. Originals stay in place and nothing is deleted.`
+      : `Creates ${Organizer.ORGANIZER_FOLDER_NAME} in ${destination?.path || 'this location'}. Existing folders are kept.`
+    return
+  }
+
+  if (current) {
+    elements.destinationHint.textContent = isDuplicateReviewJob()
+      ? `Selected extras move into Duplicate Review in this existing library. Originals stay in place and nothing is deleted.`
+      : `Uses the existing organized library here (${current.bookmarkCount.toLocaleString()} bookmark${current.bookmarkCount === 1 ? '' : 's'}).`
+    if (locations.length > 1) {
+      guidance.classList.add('is-warning')
+      elements.destinationHint.textContent += ` ${locations.length} organized libraries currently exist.`
+    }
+    return
+  }
+
+  guidance.classList.add('is-warning')
+  if (locations.length === 1) {
+    const location = locations[0]
+    elements.destinationHint.textContent = `Your existing organized library is in ${location.root?.path || 'another folder'}. Move it here before applying to avoid splitting the library.`
+    elements.moveLibraryButton.hidden = false
+    elements.moveLibraryButton.disabled = workspaceState.relocatingLibrary
+    return
+  }
+
+  elements.destinationHint.textContent = `${locations.length} organized libraries already exist. Choose one of their locations before applying.`
 }
 
 async function updateScopeCount() {
@@ -330,11 +523,92 @@ async function updateScopeCount() {
     scopeId,
     excludeOrganizer: elements.excludeOrganizer.checked,
   })
-  elements.scopeCount.textContent = `${bookmarks.length.toLocaleString()} bookmark${
-    bookmarks.length === 1 ? '' : 's'
-  }`
+  if (isDuplicateReviewJob()) {
+    const groups = duplicateReviewGroups()
+    const extraCopies = groups.reduce(
+      (total, group) => total + Math.max(0, group.copies.length - 1),
+      0,
+    )
+    elements.scopeCount.textContent = `${groups.length.toLocaleString()} group${groups.length === 1 ? '' : 's'} · ${extraCopies.toLocaleString()} extra cop${extraCopies === 1 ? 'y' : 'ies'}`
+  } else {
+    elements.scopeCount.textContent = `${bookmarks.length.toLocaleString()} bookmark${
+      bookmarks.length === 1 ? '' : 's'
+    }`
+  }
+  const automaticOption = elements.categoryLimit.querySelector('option[value="auto"]')
+  if (automaticOption) {
+    automaticOption.textContent = `Auto — up to ${Organizer.recommendedCategoryLimit(bookmarks.length)} leaf folders`
+  }
   elements.startButton.disabled = workspaceState.running || bookmarks.length === 0
   updateInstructionControls()
+}
+
+async function handleDestinationChange() {
+  workspaceState.destinationExplicitlySelected = true
+  const job = workspaceState.job
+  if (!job || workspaceState.running || workspaceState.applying) {
+    renderDestinationGuidance()
+    return
+  }
+  if (!['complete', 'paused', 'error'].includes(job.status)) {
+    renderDestinationGuidance()
+    return
+  }
+  if (job.destinationRootId === elements.destinationSelect.value) return
+
+  job.destinationRootId = elements.destinationSelect.value
+  job.destinationSelectionSource = 'user'
+  job.updatedAt = new Date().toISOString()
+  const destination = getDestinationFolder(job.destinationRootId)
+  if (job.status === 'complete') {
+    job.statusMessage = isDuplicateReviewJob(job)
+      ? `Duplicate Review destination updated to ${destination?.path || destination?.title || 'the selected folder'}. Review the selected extra copies before applying.`
+      : `Destination updated to ${destination?.path || destination?.title || 'the selected folder'}. Review the proposed tree before applying.`
+  }
+  await persistJob()
+  renderJob()
+}
+
+async function moveExistingLibraryToDestination() {
+  if (workspaceState.relocatingLibrary) return
+  const locations = organizerLibraryLocations()
+  const destinationRootId = elements.destinationSelect.value
+  if (locations.length !== 1 || !hasOrganizerDestinationConflict(destinationRootId)) return
+
+  const location = locations[0]
+  const destination = getDestinationFolder(destinationRootId)
+  if (!destination) return
+  if (
+    !globalThis.confirm(
+      `Move ${Organizer.ORGANIZER_FOLDER_NAME} and its ${location.bookmarkCount.toLocaleString()} bookmark${location.bookmarkCount === 1 ? '' : 's'} from ${location.root?.path || 'its current location'} to ${destination.path}? This moves the existing folder; it does not copy bookmarks.`,
+    )
+  ) {
+    return
+  }
+
+  workspaceState.relocatingLibrary = true
+  renderControls()
+  setStatus(`Moving the existing organized library to ${destination.path}…`)
+
+  try {
+    await Organizer.moveNode(location.id, { parentId: destinationRootId })
+    if (workspaceState.job) {
+      workspaceState.job.destinationRootId = destinationRootId
+      workspaceState.job.destinationSelectionSource = 'user'
+      workspaceState.job.statusMessage = workspaceState.job.status === 'applied'
+        ? `Existing organized library moved to ${destination.path}. Applied bookmarks remain organized and no copies were created.`
+        : `Existing organized library moved to ${destination.path}. Review the proposal before applying.`
+      workspaceState.job.updatedAt = new Date().toISOString()
+      await persistJob()
+    }
+    await refreshBookmarkTreeAndFolders()
+    setStatus(`Existing organized library moved to ${destination.path}.`, 'success')
+  } catch (error) {
+    setStatus(error.message || 'Unable to move the existing organized library.', 'danger')
+  } finally {
+    workspaceState.relocatingLibrary = false
+    renderJob()
+  }
 }
 
 async function draftInstructionFromScope() {
@@ -372,7 +646,7 @@ async function draftInstructionFromScope() {
     if (session) {
       const response = await Organizer.promptSession(
         session,
-        Organizer.buildInstructionDraftPrompt(bookmarks, Number(elements.categoryLimit.value)),
+        Organizer.buildInstructionDraftPrompt(bookmarks, resolveCategoryLimit(bookmarks.length)),
       )
       instruction = Organizer.normalizePromptValue(Organizer.extractResponseText(response), 500)
         .replace(/^["']+|["']+$/g, '')
@@ -381,7 +655,7 @@ async function draftInstructionFromScope() {
     } else {
       const themes = Organizer.buildFallbackCategoryPlan(
         bookmarks,
-        Number(elements.categoryLimit.value),
+        resolveCategoryLimit(bookmarks.length),
       )
         .filter((category) => category !== Organizer.FALLBACK_CATEGORY)
         .slice(0, 6)
@@ -396,9 +670,12 @@ async function draftInstructionFromScope() {
     elements.instructionInput.value = instruction
     elements.instructionInput.focus()
   } catch (error) {
-    console.error(error)
-    statusMessage = error.message || 'Unable to draft an instruction for this scope.'
-    statusTone = 'danger'
+    const modelCrashed = await Organizer.recordAiRuntimeFailure(error)
+    if (!modelCrashed) console.error(error)
+    statusMessage = modelCrashed
+      ? 'Chrome’s local model stopped. Choose a preset or write an instruction; local organization still works.'
+      : error.message || 'Unable to draft an instruction for this scope.'
+    statusTone = modelCrashed ? 'warning' : 'danger'
   } finally {
     session?.destroy?.()
     workspaceState.draftingInstruction = false
@@ -417,6 +694,13 @@ function updateInstructionControls() {
   document.querySelectorAll('[data-organizer-instruction]').forEach((button) => {
     button.disabled = setupLocked
   })
+}
+
+function resolveCategoryLimit(bookmarkCount) {
+  const requested = Number(elements.categoryLimit.value)
+  return Number.isFinite(requested) && requested > 0
+    ? requested
+    : Organizer.recommendedCategoryLimit(bookmarkCount)
 }
 
 async function updateAskScopeCount() {
@@ -462,6 +746,7 @@ async function startScan() {
     return
   }
 
+  workspaceState.previewRenderLimit = PREVIEW_PAGE_SIZE
   const scopeOption = elements.scopeSelect.selectedOptions[0]
   workspaceState.job = {
     version: 1,
@@ -471,8 +756,12 @@ async function startScan() {
     scopeId: elements.scopeSelect.value,
     scopeLabel: scopeOption?.textContent?.trim() || 'Selected bookmarks',
     destinationRootId: elements.destinationSelect.value,
+    destinationSelectionSource: workspaceState.destinationExplicitlySelected
+      ? 'user'
+      : 'default',
     instruction: elements.instructionInput.value.trim(),
-    maxCategories: Number(elements.categoryLimit.value),
+    maxCategories: resolveCategoryLimit(bookmarks.length),
+    categoryLimitMode: elements.categoryLimit.value,
     excludeOrganizer: elements.excludeOrganizer.checked,
     bookmarkIds: bookmarks.map((bookmark) => bookmark.id),
     processedIds: [],
@@ -498,6 +787,75 @@ async function resumeScan() {
   await runJob()
 }
 
+function isJobInterruption(error) {
+  return Boolean(
+    workspaceState.pauseRequested ||
+    workspaceState.cancelRequested ||
+    workspaceState.abortController?.signal?.aborted ||
+    error?.name === 'AbortError',
+  )
+}
+
+function recordLocalAiFallback(stage, error) {
+  if (!workspaceState.job) return
+  void Organizer.recordAiRuntimeFailure(error)
+  workspaceState.job.localAiFallback = {
+    stage,
+    message: String(error?.message || error?.name || 'Chrome local AI was unavailable.').slice(0, 300),
+    createdAt: new Date().toISOString(),
+  }
+}
+
+function buildDeterministicAssignments(bookmarks, categories) {
+  return bookmarks.map((bookmark) => ({
+    id: bookmark.id,
+    title: bookmark.title || bookmark.url,
+    url: bookmark.url,
+    parentId: bookmark.parentId,
+    index: bookmark.index,
+    folderPath: bookmark.folderPath,
+    category: Organizer.fallbackCategory(bookmark, categories),
+    reason: `Matched from ${Organizer.safeHostname(bookmark.url) || 'bookmark metadata'}.`,
+    selected: true,
+  }))
+}
+
+function applyTinyMergeRecommendations(recommendations) {
+  if (!workspaceState.job || recommendations.length === 0) return 0
+  const merges = new Map(recommendations.map((item) => [item.from, item]))
+  let changed = 0
+
+  for (const suggestion of workspaceState.job.suggestions) {
+    const merge = merges.get(suggestion.category)
+    if (!merge) continue
+    suggestion.category = merge.to
+    suggestion.reason = `${merge.from} had only ${merge.count} proposed bookmark${merge.count === 1 ? '' : 's'}; merged into ${merge.to}. ${suggestion.reason || ''}`.trim()
+    changed += 1
+  }
+
+  return changed
+}
+
+function automaticallyImproveCompletedPlan() {
+  if (!workspaceState.job) return null
+  const improvement = Organizer.improveCategorySuggestions(
+    workspaceState.job.suggestions,
+  )
+  workspaceState.job.suggestions = improvement.suggestions
+  syncPlanCategories()
+
+  const result = {
+    version: 1,
+    refinedFolders: improvement.refinedFolders.length,
+    refinedBookmarks: improvement.refinedBookmarks,
+    mergedFolders: improvement.mergedFolders.length,
+    mergedBookmarks: improvement.mergedBookmarks,
+    createdAt: new Date().toISOString(),
+  }
+  workspaceState.job.autoImprovement = result
+  return result
+}
+
 async function runJob() {
   if (!workspaceState.job || workspaceState.running) return
 
@@ -508,13 +866,24 @@ async function runJob() {
   renderJob()
 
   try {
-    const sessionResult = await Organizer.createLanguageModelSession({
-      signal: workspaceState.abortController.signal,
-      onDownload(percent) {
-        const suffix = percent == null ? '' : ` ${Math.round(percent)}%`
-        setStatus(`Downloading Chrome’s local AI model…${suffix}`)
-      },
-    })
+    let sessionResult
+    try {
+      sessionResult = await Organizer.createLanguageModelSession({
+        signal: workspaceState.abortController.signal,
+        onDownload(percent) {
+          const suffix = percent == null ? '' : ` ${Math.round(percent)}%`
+          setStatus(`Downloading Chrome’s local AI model…${suffix}`)
+        },
+      })
+    } catch (error) {
+      if (isJobInterruption(error)) throw error
+      recordLocalAiFallback('startup', error)
+      sessionResult = {
+        available: false,
+        session: null,
+        message: `Chrome local AI could not start (${error?.message || 'unknown error'}).`,
+      }
+    }
     workspaceState.session = sessionResult.session
     updateAiBadge(sessionResult)
 
@@ -531,25 +900,45 @@ async function runJob() {
 
     if (workspaceState.job.categories.length === 0) {
       workspaceState.job.status = 'planning'
-      workspaceState.job.statusMessage = workspaceState.session
+      const useAiPlanning =
+        Boolean(workspaceState.session) && orderedBookmarks.length <= AI_PLANNING_BOOKMARK_LIMIT
+      workspaceState.job.statusMessage = useAiPlanning
         ? 'Building a category plan from the collection…'
-        : `${sessionResult.message} Using a deterministic local category plan.`
+        : workspaceState.session
+          ? 'Using the detailed local taxonomy for this large collection…'
+          : `${sessionResult.message} Using a deterministic local category plan.`
       renderJob()
 
-      if (workspaceState.session) {
-        const response = await Organizer.promptSession(
-          workspaceState.session,
-          Organizer.buildPlanningPrompt(
-            orderedBookmarks,
-            workspaceState.job.instruction,
+      if (useAiPlanning) {
+        try {
+          const response = await Organizer.promptSession(
+            workspaceState.session,
+            Organizer.buildPlanningPrompt(
+              orderedBookmarks,
+              workspaceState.job.instruction,
+              workspaceState.job.maxCategories,
+            ),
+            workspaceState.abortController.signal,
+          )
+          workspaceState.job.categories = Organizer.parseCategoryPlan(
+            response,
             workspaceState.job.maxCategories,
-          ),
-          workspaceState.abortController.signal,
-        )
-        workspaceState.job.categories = Organizer.parseCategoryPlan(
-          response,
-          workspaceState.job.maxCategories,
-        )
+            orderedBookmarks,
+          )
+        } catch (error) {
+          if (isJobInterruption(error)) throw error
+          recordLocalAiFallback('planning', error)
+          workspaceState.session?.destroy?.()
+          workspaceState.session = null
+          updateAiBadge({
+            available: false,
+            message: `Local AI planning failed (${error?.message || 'unknown error'}). Local rules completed the plan.`,
+          })
+          workspaceState.job.categories = Organizer.buildFallbackCategoryPlan(
+            orderedBookmarks,
+            workspaceState.job.maxCategories,
+          )
+        }
       } else {
         workspaceState.job.categories = Organizer.buildFallbackCategoryPlan(
           orderedBookmarks,
@@ -566,51 +955,96 @@ async function runJob() {
 
     const processed = new Set(workspaceState.job.processedIds)
     const pending = orderedBookmarks.filter((bookmark) => !processed.has(bookmark.id))
+    const assignmentBatchSize = workspaceState.session ? ASSIGNMENT_BATCH_SIZE : 120
 
-    for (let start = 0; start < pending.length; start += ASSIGNMENT_BATCH_SIZE) {
+    for (let start = 0; start < pending.length; start += assignmentBatchSize) {
       if (workspaceState.pauseRequested || workspaceState.cancelRequested) break
 
-      const batch = pending.slice(start, start + ASSIGNMENT_BATCH_SIZE)
+      const batch = pending.slice(start, start + assignmentBatchSize)
       let assignments
 
       if (workspaceState.session) {
-        const response = await Organizer.promptSession(
-          workspaceState.session,
-          Organizer.buildAssignmentPrompt(
+        try {
+          const response = await Organizer.promptSession(
+            workspaceState.session,
+            Organizer.buildAssignmentPrompt(
+              batch,
+              workspaceState.job.categories,
+              workspaceState.job.instruction,
+            ),
+            workspaceState.abortController.signal,
+          )
+          assignments = Organizer.parseAssignments(
+            response,
             batch,
             workspaceState.job.categories,
-            workspaceState.job.instruction,
-          ),
-          workspaceState.abortController.signal,
-        )
-        assignments = Organizer.parseAssignments(
-          response,
-          batch,
-          workspaceState.job.categories,
-        )
+          )
+
+          const unresolvedIds = new Set(
+            assignments
+              .filter((assignment) => assignment.category === Organizer.FALLBACK_CATEGORY)
+              .map((assignment) => assignment.id),
+          )
+          if (unresolvedIds.size > 0) {
+            const unresolvedBookmarks = batch.filter((bookmark) => unresolvedIds.has(bookmark.id))
+            workspaceState.job.statusMessage = `Repairing ${unresolvedBookmarks.length.toLocaleString()} uncertain assignment${unresolvedBookmarks.length === 1 ? '' : 's'}…`
+            renderControls()
+            renderStatus()
+            const repairResponse = await Organizer.promptSession(
+              workspaceState.session,
+              Organizer.buildAssignmentPrompt(
+                unresolvedBookmarks,
+                workspaceState.job.categories,
+                `${workspaceState.job.instruction || ''} Choose the closest available folder for every item; do not leave any item uncategorized.`,
+              ),
+              workspaceState.abortController.signal,
+            )
+            const repaired = Organizer.parseAssignments(
+              repairResponse,
+              unresolvedBookmarks,
+              workspaceState.job.categories,
+            )
+            const repairedById = new Map(repaired.map((assignment) => [assignment.id, assignment]))
+            assignments = assignments.map((assignment) => {
+              const candidate = repairedById.get(assignment.id)
+              return candidate && candidate.category !== Organizer.FALLBACK_CATEGORY
+                ? candidate
+                : assignment
+            })
+          }
+        } catch (error) {
+          if (isJobInterruption(error)) throw error
+          recordLocalAiFallback('assignment', error)
+          workspaceState.session?.destroy?.()
+          workspaceState.session = null
+          updateAiBadge({
+            available: false,
+            message: `Local AI assignment failed (${error?.message || 'unknown error'}). Local rules completed the remaining bookmarks.`,
+          })
+          assignments = buildDeterministicAssignments(batch, workspaceState.job.categories)
+        }
       } else {
-        assignments = batch.map((bookmark) => ({
-          id: bookmark.id,
-          title: bookmark.title || bookmark.url,
-          url: bookmark.url,
-          parentId: bookmark.parentId,
-          index: bookmark.index,
-          folderPath: bookmark.folderPath,
-          category: Organizer.fallbackCategory(
-            bookmark,
-            workspaceState.job.categories,
-          ),
-          reason: `Matched from ${Organizer.safeHostname(bookmark.url) || 'bookmark metadata'}.`,
-          selected: true,
-        }))
+        assignments = buildDeterministicAssignments(batch, workspaceState.job.categories)
       }
 
       workspaceState.job.suggestions.push(...assignments)
       workspaceState.job.processedIds.push(...batch.map((bookmark) => bookmark.id))
       workspaceState.job.statusMessage = `Processed ${workspaceState.job.processedIds.length.toLocaleString()} of ${workspaceState.job.total.toLocaleString()} bookmarks.`
       workspaceState.job.updatedAt = new Date().toISOString()
-      await persistJob()
-      renderJob()
+      const processedCount = workspaceState.job.processedIds.length
+      const shouldCheckpoint =
+        workspaceState.job.total <= 250 ||
+        processedCount === workspaceState.job.total ||
+        processedCount % (ASSIGNMENT_BATCH_SIZE * 10) === 0
+      if (shouldCheckpoint) await persistJob()
+      renderControls()
+      renderStatus()
+      if (
+        shouldCheckpoint
+      ) {
+        renderCategoryPlan()
+        renderPreview()
+      }
       await yieldToUi()
     }
 
@@ -623,19 +1057,37 @@ async function runJob() {
       workspaceState.job.statusMessage =
         'Paused at the latest completed batch. Resume whenever you are ready.'
     } else {
+      const usedCategories = new Set(
+        workspaceState.job.suggestions
+          .map((suggestion) => suggestion.category)
+          .filter((category) => category !== Organizer.FALLBACK_CATEGORY),
+      )
+      workspaceState.job.categories = workspaceState.job.categories.filter((category) =>
+        usedCategories.has(category),
+      )
+      const improvement = automaticallyImproveCompletedPlan()
+      const unresolved = workspaceState.job.suggestions.filter(
+        (suggestion) => suggestion.category === Organizer.FALLBACK_CATEGORY,
+      ).length
       workspaceState.job.status = 'complete'
-      workspaceState.job.statusMessage = `Scan complete. Review ${workspaceState.job.suggestions.length.toLocaleString()} proposed moves before applying.`
+      const improvementSummary = [
+        improvement?.refinedFolders > 0
+          ? `refined ${improvement.refinedFolders} oversized folder${improvement.refinedFolders === 1 ? '' : 's'}`
+          : '',
+        improvement?.mergedFolders > 0
+          ? `merged ${improvement.mergedFolders} tiny folder${improvement.mergedFolders === 1 ? '' : 's'}`
+          : '',
+      ].filter(Boolean).join(' and ')
+      workspaceState.job.statusMessage = unresolved > 0
+        ? `Scan complete. ${unresolved.toLocaleString()} bookmark${unresolved === 1 ? '' : 's'} still need a folder before applying.`
+        : `Scan complete. All ${workspaceState.job.suggestions.length.toLocaleString()} bookmarks have proposed folders.${improvementSummary ? ` The proposal automatically ${improvementSummary}.` : ''}`
     }
   } catch (error) {
     if (workspaceState.cancelRequested) {
       workspaceState.job.status = 'cancelled'
       workspaceState.job.statusMessage =
         'Scan cancelled. Completed suggestions remain available for reference.'
-    } else if (
-      workspaceState.pauseRequested ||
-      workspaceState.abortController?.signal.aborted ||
-      error?.name === 'AbortError'
-    ) {
+    } else if (isJobInterruption(error)) {
       workspaceState.job.status = 'paused'
       workspaceState.job.statusMessage =
         'Paused at the latest completed batch. Resume whenever you are ready.'
@@ -695,11 +1147,92 @@ function restoreJobControls() {
   elements.scopeSelect.value = job.scopeId
   elements.destinationSelect.value = job.destinationRootId
   elements.instructionInput.value = job.instruction || ''
-  elements.categoryLimit.value = String(job.maxCategories || 8)
+  const preferredLimit = job.categoryLimitMode || 'auto'
+  elements.categoryLimit.value = [...elements.categoryLimit.options].some(
+    (option) => option.value === preferredLimit,
+  )
+    ? preferredLimit
+    : 'auto'
   elements.excludeOrganizer.checked = job.excludeOrganizer !== false
 }
 
+function isDuplicateReviewJob(job = workspaceState.job) {
+  return job?.mode === 'duplicate_review'
+}
+
+function isLegacyDuplicateReviewJob(job) {
+  return (
+    !job?.mode &&
+    job?.status === 'complete' &&
+    job?.categories?.length === 1 &&
+    job.categories[0] === 'Duplicate Review' &&
+    /quarantine exact duplicate copies/i.test(job.instruction || '')
+  )
+}
+
+function duplicateSuggestionsFromGroups(groups) {
+  return groups.flatMap((group) =>
+    group.bookmarks.map((bookmark) => ({
+      id: bookmark.id,
+      title: bookmark.title || bookmark.url,
+      url: bookmark.url,
+      parentId: bookmark.parentId,
+      index: bookmark.index,
+      folderPath: bookmark.folderPath,
+      category: 'Duplicate Review',
+      reason: bookmark.id === group.keeper.id
+        ? 'Selected as the copy to keep because it has the cleanest URL.'
+        : `Exact duplicate of “${group.keeper.title || group.keeper.url}” after ignoring tracking-only URL details.`,
+      selected: bookmark.id !== group.keeper.id,
+      duplicateGroupKey: group.normalizedUrl,
+      duplicateKeeperId: group.keeper.id,
+    })),
+  )
+}
+
+function duplicateReviewGroups(suggestions = workspaceState.job?.suggestions || []) {
+  const groups = new Map()
+  for (const suggestion of suggestions) {
+    const key = suggestion.duplicateGroupKey || suggestion.url || suggestion.id
+    const group = groups.get(key) || []
+    group.push(suggestion)
+    groups.set(key, group)
+  }
+  return [...groups.entries()].map(([key, copies]) => ({ key, copies }))
+}
+
+function renderWorkspaceMode() {
+  const duplicateMode = isDuplicateReviewJob()
+  const duplicateGroups = duplicateMode ? duplicateReviewGroups() : []
+  const extraCopies = duplicateGroups.reduce(
+    (total, group) => total + Math.max(0, group.copies.length - 1),
+    0,
+  )
+  elements.organizeView.classList.toggle('is-duplicate-review', duplicateMode)
+  elements.organizeTitle.textContent = duplicateMode
+    ? 'Review duplicate bookmarks'
+    : 'Organize bookmarks'
+  elements.organizeDescription.textContent = duplicateMode
+    ? 'Keep the right copy in place and move only confirmed extras into a reversible review folder.'
+    : 'Choose a scope, generate a plan, and review every move before applying it.'
+  elements.setupStepLabel.textContent = duplicateMode ? 'Cleanup' : 'Step 1'
+  elements.setupTitle.textContent = duplicateMode
+    ? 'Choose where extra copies should go'
+    : 'Choose what to organize'
+  elements.planStepLabel.textContent = duplicateMode ? 'Matches' : 'Step 2'
+  elements.planTitle.textContent = duplicateMode ? 'Duplicate groups' : 'Category plan'
+  elements.previewStepLabel.textContent = duplicateMode ? 'Review' : 'Step 3'
+  elements.previewTitle.textContent = duplicateMode
+    ? 'Choose extra copies to move'
+    : 'Review proposed moves'
+  elements.selectAllLabel.textContent = duplicateMode ? 'Select all extra copies' : 'Select all'
+  if (duplicateMode) {
+    elements.scopeCount.textContent = `${duplicateGroups.length.toLocaleString()} group${duplicateGroups.length === 1 ? '' : 's'} · ${extraCopies.toLocaleString()} extra cop${extraCopies === 1 ? 'y' : 'ies'}`
+  }
+}
+
 function renderJob() {
+  renderWorkspaceMode()
   renderControls()
   renderStatus()
   renderCategoryPlan()
@@ -711,7 +1244,11 @@ function renderControls() {
   const hasJob = Boolean(workspaceState.job)
   const canResume = ['paused', 'error'].includes(status)
   const setupLocked =
-    workspaceState.running || workspaceState.applying || workspaceState.draftingInstruction
+    workspaceState.running ||
+    workspaceState.applying ||
+    workspaceState.relocatingLibrary ||
+    workspaceState.draftingInstruction ||
+    workspaceState.refiningPlan
 
   elements.scopeSelect.disabled = setupLocked
   elements.destinationSelect.disabled = setupLocked
@@ -724,10 +1261,32 @@ function renderControls() {
   elements.resumeButton.disabled = workspaceState.running || !canResume
   elements.cancelButton.disabled =
     workspaceState.applying || !hasJob || ['complete', 'cancelled', 'applied'].includes(status)
+  elements.duplicateReviewButton.disabled = setupLocked
+  elements.duplicateReviewButton.textContent = isDuplicateReviewJob()
+    ? 'Back to organize'
+    : 'Find duplicates'
+  const selectedSuggestions = workspaceState.job?.suggestions?.filter(
+    (suggestion) => suggestion.selected,
+  ) || []
+  elements.applyButton.textContent = isDuplicateReviewJob()
+    ? `Move ${selectedSuggestions.length.toLocaleString()} to review`
+    : 'Apply selected'
   elements.applyButton.disabled =
     workspaceState.applying ||
     status !== 'complete' ||
-    !workspaceState.job?.suggestions?.some((suggestion) => suggestion.selected)
+    selectedSuggestions.length === 0 ||
+    selectedSuggestions.some((suggestion) => suggestion.category === Organizer.FALLBACK_CATEGORY) ||
+    hasOrganizerDestinationConflict(workspaceState.job?.destinationRootId)
+  const health = Organizer.analyzeCategoryHealth(workspaceState.job?.suggestions || [])
+  elements.refineLargeButton.disabled =
+    setupLocked ||
+    status !== 'complete' ||
+    !health.broad.some((item) => Organizer.categoryRefinementOptions(item.category).length > 0)
+  elements.mergeTinyButton.disabled =
+    setupLocked ||
+    status !== 'complete' ||
+    Organizer.recommendTinyCategoryMerges(workspaceState.job?.suggestions || []).length === 0
+  renderDestinationGuidance()
   updateInstructionControls()
 }
 
@@ -761,11 +1320,18 @@ function renderCategoryPlan() {
   elements.categoryPlan.replaceChildren()
   elements.categoryOptions.replaceChildren()
 
+  if (isDuplicateReviewJob()) {
+    renderDuplicatePlanSummary()
+    return
+  }
+
   if (categories.length === 0) {
     elements.categoryPlan.className = 'category-plan empty-copy'
     elements.categoryPlan.textContent =
       'Categories will appear here before bookmark assignment begins.'
     elements.planCount.textContent = 'Not planned'
+    elements.planVisualization.hidden = true
+    elements.categoryHealth.hidden = true
     return
   }
 
@@ -790,7 +1356,335 @@ function renderCategoryPlan() {
     option.value = category
     elements.categoryOptions.append(option)
   }
-  elements.planCount.textContent = `${categories.length} categories`
+  const unresolved = workspaceState.job?.suggestions?.filter(
+    (suggestion) => suggestion.category === Organizer.FALLBACK_CATEGORY,
+  ).length || 0
+  elements.planCount.textContent = `${categories.length} leaf folder${categories.length === 1 ? '' : 's'}${
+    workspaceState.job?.status === 'complete' || workspaceState.job?.status === 'applied'
+      ? unresolved > 0
+        ? ` · ${unresolved} need review`
+        : ' · all assigned'
+      : ''
+  }`
+  renderPlanVisualization()
+
+  const canReviewHealth = workspaceState.job?.status === 'complete'
+  elements.categoryHealth.hidden = !canReviewHealth
+  if (!canReviewHealth) return
+
+  const health = Organizer.analyzeCategoryHealth(workspaceState.job.suggestions)
+  const refinable = health.broad.filter(
+    (item) => Organizer.categoryRefinementOptions(item.category).length > 0,
+  )
+  const merges = Organizer.recommendTinyCategoryMerges(workspaceState.job.suggestions)
+  if (refinable.length === 0 && merges.length === 0) {
+    elements.categoryHealthTitle.textContent = 'Plan looks balanced'
+    if (health.broad.length > 0) {
+      elements.categoryHealthTitle.textContent = 'Plan is ready for review'
+      elements.categoryHealthText.textContent = `${health.broad.length} broad folder${health.broad.length === 1 ? '' : 's'} remain because the bookmark metadata does not support a reliable automatic split.`
+    } else if (health.tiny.length > 0) {
+      elements.categoryHealthText.textContent = `${health.tiny.length} small folder${health.tiny.length === 1 ? '' : 's'} remain because no safe merge target was found.`
+    } else {
+      elements.categoryHealthText.textContent = health.tinyThreshold > 0
+        ? `No folder exceeds ${health.broadThreshold.toLocaleString()} bookmarks and no folder has ${health.tinyThreshold.toLocaleString()} or fewer.`
+        : 'This collection is small enough that focused folders do not need to be merged.'
+    }
+  } else {
+    elements.categoryHealthTitle.textContent = 'Plan can be tightened'
+    const details = []
+    if (refinable.length > 0) {
+      details.push(`${refinable.length} refinable folder${refinable.length === 1 ? '' : 's'}`)
+    }
+    if (merges.length > 0) {
+      details.push(`${merges.length} safely mergeable folder${merges.length === 1 ? '' : 's'}`)
+    }
+    elements.categoryHealthText.textContent = `${details.join(' and ')}. Refine or merge them before applying if the proposed changes are useful.`
+  }
+  elements.refineLargeButton.hidden = refinable.length === 0
+  elements.refineLargeButton.textContent = workspaceState.refiningPlan
+    ? 'Refining…'
+    : `Refine ${refinable.length} large folder${refinable.length === 1 ? '' : 's'}`
+  elements.mergeTinyButton.hidden = merges.length === 0
+  elements.mergeTinyButton.textContent = `Merge ${merges.length} tiny folder${merges.length === 1 ? '' : 's'}`
+  elements.categoryHealthNote.hidden = refinable.length === 0 && merges.length === 0
+}
+
+function renderDuplicatePlanSummary() {
+  const groups = duplicateReviewGroups()
+  const extraCopies = groups.reduce(
+    (total, group) => total + Math.max(0, group.copies.length - 1),
+    0,
+  )
+  const selectedCopies = groups.reduce(
+    (total, group) => total + group.copies.filter((copy) => copy.selected).length,
+    0,
+  )
+  elements.categoryPlan.className = 'duplicate-plan-summary'
+  elements.planCount.textContent = `${groups.length.toLocaleString()} group${groups.length === 1 ? '' : 's'} · ${extraCopies.toLocaleString()} extra cop${extraCopies === 1 ? 'y' : 'ies'}`
+  elements.planVisualization.hidden = true
+  elements.categoryHealth.hidden = true
+
+  const items = [
+    {
+      value: groups.length,
+      label: `matching link${groups.length === 1 ? '' : 's'}`,
+    },
+    {
+      value: selectedCopies,
+      label: `cop${selectedCopies === 1 ? 'y' : 'ies'} selected to move`,
+    },
+    {
+      value: groups.length,
+      label: `keeper${groups.length === 1 ? '' : 's'} staying in place`,
+    },
+  ]
+  for (const item of items) {
+    const card = document.createElement('div')
+    card.className = 'duplicate-summary-item'
+    const value = document.createElement('strong')
+    value.textContent = item.value.toLocaleString()
+    const label = document.createElement('span')
+    label.textContent = item.label
+    card.append(value, label)
+    elements.categoryPlan.append(card)
+  }
+
+  const note = document.createElement('p')
+  note.className = 'duplicate-summary-note'
+  note.textContent = 'The cleanest URL is kept initially. Review each group below to keep a different copy or leave additional copies untouched. Nothing is deleted.'
+  elements.categoryPlan.append(note)
+}
+
+function getDestinationFolder(destinationRootId = workspaceState.job?.destinationRootId) {
+  return workspaceState.folders.find((folder) => folder.id === destinationRootId) || null
+}
+
+function appendTreeRow(container, { label, count, level = 'leaf', branch = '•' }) {
+  const row = document.createElement('div')
+  row.className = `move-tree-row${level === 'parent' ? ' is-parent' : ''}${level === 'child' ? ' is-child' : ''}${level === 'grandchild' ? ' is-grandchild' : ''}${level === 'overflow' ? ' is-overflow' : ''}`
+
+  const marker = document.createElement('span')
+  marker.className = 'tree-branch'
+  marker.textContent = branch
+  const copy = document.createElement('span')
+  copy.className = 'tree-label'
+  copy.textContent = label
+  copy.title = label
+  row.append(marker, copy)
+
+  if (Number.isFinite(count)) {
+    const total = document.createElement('span')
+    total.className = 'tree-count'
+    total.textContent = count.toLocaleString()
+    row.append(total)
+  }
+  container.append(row)
+}
+
+function renderPlanVisualization() {
+  const suggestions = workspaceState.job?.suggestions || []
+  const selected = suggestions.filter((suggestion) => suggestion.selected)
+  elements.sourceTree.replaceChildren()
+  elements.destinationTree.replaceChildren()
+
+  if (suggestions.length === 0) {
+    elements.planVisualization.hidden = true
+    return
+  }
+
+  elements.planVisualization.hidden = false
+  const sourceCounts = new Map()
+  for (const suggestion of selected) {
+    const path = suggestion.folderPath || 'Unfiled'
+    sourceCounts.set(path, (sourceCounts.get(path) || 0) + 1)
+  }
+  const sources = [...sourceCounts.entries()]
+    .map(([path, count]) => ({ path, count }))
+    .sort((left, right) => right.count - left.count || left.path.localeCompare(right.path))
+  const visibleSources = sources.slice(0, 12)
+  elements.sourceTreeSummary.textContent = `${selected.length.toLocaleString()} selected from ${sources.length.toLocaleString()} folder${sources.length === 1 ? '' : 's'}`
+  for (const source of visibleSources) {
+    appendTreeRow(elements.sourceTree, {
+      label: source.path,
+      count: source.count,
+      branch: '□',
+    })
+  }
+  if (sources.length > visibleSources.length) {
+    appendTreeRow(elements.sourceTree, {
+      label: `${(sources.length - visibleSources.length).toLocaleString()} more source folders`,
+      level: 'overflow',
+      branch: '…',
+    })
+  }
+
+  const destination = getDestinationFolder()
+  const destinationPath = [
+    destination?.path || destination?.title || 'Selected destination',
+    Organizer.ORGANIZER_FOLDER_NAME,
+  ].join(' / ')
+  elements.destinationTreeSummary.textContent = destinationPath
+
+  const parentGroups = new Map()
+  for (const suggestion of selected) {
+    const path = Organizer.splitCategoryPath(suggestion.category)
+    const parent = path[0]
+    const leaf = path[1] || null
+    if (!parentGroups.has(parent)) {
+      parentGroups.set(parent, { count: 0, leaves: new Map() })
+    }
+    const group = parentGroups.get(parent)
+    group.count += 1
+    if (leaf) group.leaves.set(leaf, (group.leaves.get(leaf) || 0) + 1)
+  }
+
+  const sortedParents = [...parentGroups.entries()]
+    .sort((left, right) => right[1].count - left[1].count || left[0].localeCompare(right[0]))
+  for (const [parent, group] of sortedParents) {
+    appendTreeRow(elements.destinationTree, {
+      label: parent,
+      count: group.count,
+      level: 'parent',
+      branch: group.leaves.size > 0 ? '▾' : '□',
+    })
+    for (const [leaf, count] of [...group.leaves.entries()]
+      .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))) {
+      appendTreeRow(elements.destinationTree, {
+        label: leaf,
+        count,
+        level: 'child',
+        branch: '└',
+      })
+    }
+  }
+
+  elements.planSafetyNote.textContent = selected.length === suggestions.length
+    ? `All ${selected.length.toLocaleString()} proposed bookmarks will move. Existing folders are kept and may become empty.`
+    : `${selected.length.toLocaleString()} selected bookmarks will move; ${(suggestions.length - selected.length).toLocaleString()} unselected bookmarks will stay where they are. Existing folders are kept.`
+}
+
+function syncPlanCategories() {
+  if (!workspaceState.job) return
+  workspaceState.job.categories = [...new Set(
+    workspaceState.job.suggestions
+      .map((suggestion) => Organizer.sanitizeCategoryPath(suggestion.category))
+      .filter((category) => category !== Organizer.FALLBACK_CATEGORY),
+  )]
+  workspaceState.job.maxCategories = Math.max(
+    Number(workspaceState.job.maxCategories) || 0,
+    workspaceState.job.categories.length,
+  )
+}
+
+async function refineLargeCategories() {
+  if (workspaceState.refiningPlan || workspaceState.job?.status !== 'complete') return
+  const health = Organizer.analyzeCategoryHealth(workspaceState.job.suggestions)
+  const targets = health.broad.filter(
+    (item) => Organizer.categoryRefinementOptions(item.category).length > 0,
+  )
+  if (targets.length === 0) return
+
+  workspaceState.refiningPlan = true
+  workspaceState.job.statusMessage = 'Refining oversized folders in the proposal…'
+  renderJob()
+  let session = null
+  let refinedCount = 0
+
+  try {
+    const sessionResult = await Organizer.createLanguageModelSession()
+    session = sessionResult.session
+    updateAiBadge(sessionResult)
+
+    for (const target of targets) {
+      const options = Organizer.categoryRefinementOptions(target.category)
+      const suggestions = workspaceState.job.suggestions.filter(
+        (suggestion) => suggestion.category === target.category,
+      )
+
+      for (let start = 0; start < suggestions.length; start += ASSIGNMENT_BATCH_SIZE) {
+        const batch = suggestions.slice(start, start + ASSIGNMENT_BATCH_SIZE)
+        const bookmarks = batch.map((suggestion) => ({
+          id: suggestion.id,
+          title: suggestion.title,
+          url: suggestion.url,
+          parentId: suggestion.parentId,
+          index: suggestion.index,
+          folderPath: suggestion.folderPath,
+        }))
+        let assignments
+
+        if (session) {
+          try {
+            const response = await Organizer.promptSession(
+              session,
+              Organizer.buildAssignmentPrompt(
+                bookmarks,
+                options,
+                `Refine the current ${target.category} folder into the most specific supported destination. Use the general option only when bookmark metadata does not support a narrower distinction.`,
+              ),
+            )
+            assignments = Organizer.parseAssignments(response, bookmarks, options)
+          } catch (error) {
+            recordLocalAiFallback('refinement', error)
+          }
+        }
+
+        if (!assignments) {
+          assignments = bookmarks.map((bookmark) => ({
+            id: bookmark.id,
+            category:
+              Organizer.fallbackCategory(bookmark, options) === Organizer.FALLBACK_CATEGORY
+                ? options.at(-1)
+                : Organizer.fallbackCategory(bookmark, options),
+            reason: `Refined from ${target.category} using local bookmark metadata.`,
+          }))
+        }
+
+        const byId = new Map(assignments.map((assignment) => [assignment.id, assignment]))
+        for (const suggestion of batch) {
+          const assignment = byId.get(suggestion.id)
+          suggestion.category = assignment?.category === Organizer.FALLBACK_CATEGORY
+            ? options.at(-1)
+            : assignment?.category || options.at(-1)
+          suggestion.reason = assignment?.reason || suggestion.reason
+          refinedCount += 1
+        }
+        workspaceState.job.statusMessage = `Refined ${refinedCount.toLocaleString()} oversized-folder assignment${refinedCount === 1 ? '' : 's'} in the proposal…`
+        renderStatus()
+        await yieldToUi()
+      }
+    }
+
+    syncPlanCategories()
+    workspaceState.job.statusMessage = `Refined ${refinedCount.toLocaleString()} proposed assignment${refinedCount === 1 ? '' : 's'}. Review the new folders before applying.`
+  } catch (error) {
+    console.error(error)
+    workspaceState.job.statusMessage = error.message || 'The folder refinement could not be completed.'
+  } finally {
+    session?.destroy?.()
+    workspaceState.refiningPlan = false
+    workspaceState.job.updatedAt = new Date().toISOString()
+    await persistJob()
+    renderJob()
+  }
+}
+
+async function mergeTinyCategories() {
+  if (workspaceState.refiningPlan || workspaceState.job?.status !== 'complete') return
+  const recommendations = Organizer.recommendTinyCategoryMerges(
+    workspaceState.job.suggestions,
+  )
+  if (recommendations.length === 0) return
+
+  workspaceState.refiningPlan = true
+  const changed = applyTinyMergeRecommendations(recommendations)
+
+  syncPlanCategories()
+  workspaceState.job.statusMessage = `Merged ${recommendations.length} tiny proposed folder${recommendations.length === 1 ? '' : 's'} across ${changed.toLocaleString()} bookmark${changed === 1 ? '' : 's'}. Review the changes before applying.`
+  workspaceState.job.updatedAt = new Date().toISOString()
+  workspaceState.refiningPlan = false
+  await persistJob()
+  renderJob()
 }
 
 function renderPreview() {
@@ -798,6 +1692,14 @@ function renderPreview() {
   elements.previewList.replaceChildren()
   elements.previewEmpty.hidden = suggestions.length > 0
   elements.previewList.hidden = suggestions.length === 0
+  elements.previewMore.hidden = true
+
+  if (isDuplicateReviewJob()) {
+    renderDuplicatePreview(suggestions)
+    return
+  }
+
+  const visibleSuggestions = suggestions.slice(0, workspaceState.previewRenderLimit)
 
   const selectedCount = suggestions.filter((suggestion) => suggestion.selected).length
   elements.previewCount.textContent = `${selectedCount.toLocaleString()} of ${suggestions.length.toLocaleString()} selected`
@@ -810,7 +1712,7 @@ function renderPreview() {
   }
 
   const fragment = document.createDocumentFragment()
-  for (const suggestion of suggestions) {
+  for (const suggestion of visibleSuggestions) {
     const row = document.createElement('div')
     row.className = `preview-row${suggestion.selected ? '' : ' is-unselected'}`
     row.dataset.bookmarkId = suggestion.id
@@ -837,7 +1739,7 @@ function renderPreview() {
 
     const category = document.createElement('input')
     category.className = 'category-input'
-    category.value = Organizer.sanitizeCategory(suggestion.category)
+    category.value = Organizer.sanitizeCategoryPath(suggestion.category)
     category.dataset.role = 'category'
     category.setAttribute('list', 'categoryOptions')
     category.setAttribute('aria-label', `Category for ${suggestion.title}`)
@@ -851,11 +1753,136 @@ function renderPreview() {
   }
 
   elements.previewList.append(fragment)
+  const hiddenCount = Math.max(0, suggestions.length - visibleSuggestions.length)
+  elements.previewMore.hidden = hiddenCount === 0
+  elements.previewVisibleCount.textContent = `Showing ${visibleSuggestions.length.toLocaleString()} of ${suggestions.length.toLocaleString()} suggestions`
+  elements.loadMoreButton.textContent = `Show ${Math.min(PREVIEW_PAGE_SIZE, hiddenCount).toLocaleString()} more`
   renderControls()
 }
 
+function duplicateGroupDisplayName(group) {
+  const keeperId = group.copies[0]?.duplicateKeeperId
+  const keeper = group.copies.find((copy) => copy.id === keeperId) || group.copies[0]
+  try {
+    return new URL(keeper.url).hostname.replace(/^www\./, '')
+  } catch {
+    return keeper.title || keeper.url || 'Matching bookmark'
+  }
+}
+
+function renderDuplicatePreview(suggestions) {
+  const groups = duplicateReviewGroups(suggestions)
+  const potentialExtras = groups.reduce(
+    (total, group) => total + Math.max(0, group.copies.length - 1),
+    0,
+  )
+  const selectedCount = suggestions.filter((suggestion) => suggestion.selected).length
+  elements.previewCount.textContent = `${selectedCount.toLocaleString()} of ${potentialExtras.toLocaleString()} extra cop${potentialExtras === 1 ? 'y' : 'ies'} selected`
+  elements.selectAll.checked = potentialExtras > 0 && selectedCount === potentialExtras
+  elements.selectAll.indeterminate = selectedCount > 0 && selectedCount < potentialExtras
+
+  if (suggestions.length === 0) {
+    elements.previewEmpty.textContent = 'No duplicate groups are ready for review.'
+    renderControls()
+    return
+  }
+
+  const visibleGroups = groups.slice(0, workspaceState.previewRenderLimit)
+  const fragment = document.createDocumentFragment()
+  for (const group of visibleGroups) {
+    const keeperId = group.copies[0]?.duplicateKeeperId
+    const keeper = group.copies.find((copy) => copy.id === keeperId) || group.copies[0]
+    const card = document.createElement('section')
+    card.className = 'duplicate-group'
+    card.dataset.duplicateGroupKey = group.key
+
+    const heading = document.createElement('div')
+    heading.className = 'duplicate-group-heading'
+    const headingCopy = document.createElement('div')
+    const eyebrow = document.createElement('span')
+    eyebrow.textContent = duplicateGroupDisplayName(group)
+    const title = document.createElement('strong')
+    title.textContent = keeper.title || keeper.url
+    headingCopy.append(eyebrow, title)
+    const count = document.createElement('span')
+    count.className = 'duplicate-group-count'
+    count.textContent = `${group.copies.length} copies`
+    heading.append(headingCopy, count)
+    card.append(heading)
+
+    const copies = document.createElement('div')
+    copies.className = 'duplicate-copy-list'
+    for (const copy of group.copies) {
+      const isKeeper = copy.id === keeper.id
+      const row = document.createElement('div')
+      row.className = `duplicate-copy${isKeeper ? ' is-keeper' : copy.selected ? ' is-selected' : ''}`
+      row.dataset.bookmarkId = copy.id
+
+      const choice = document.createElement('div')
+      choice.className = 'duplicate-copy-choice'
+      if (isKeeper) {
+        const badge = document.createElement('span')
+        badge.className = 'duplicate-keeper-badge'
+        badge.textContent = 'Keep'
+        choice.append(badge)
+      } else {
+        const checkbox = document.createElement('input')
+        checkbox.className = 'preview-select'
+        checkbox.type = 'checkbox'
+        checkbox.checked = copy.selected
+        checkbox.dataset.role = 'select'
+        checkbox.setAttribute('aria-label', `Move ${copy.title || copy.url} to Duplicate Review`)
+        choice.append(checkbox)
+      }
+
+      const copyDetails = document.createElement('div')
+      copyDetails.className = 'duplicate-copy-details'
+      const copyTitle = document.createElement('strong')
+      copyTitle.textContent = copy.title || copy.url
+      const copyUrl = document.createElement('span')
+      copyUrl.textContent = copy.url
+      const copyPath = document.createElement('span')
+      copyPath.textContent = copy.folderPath || 'Unfiled'
+      copyDetails.append(copyTitle, copyUrl, copyPath)
+
+      const action = document.createElement('div')
+      action.className = 'duplicate-copy-action'
+      if (isKeeper) {
+        const status = document.createElement('span')
+        status.textContent = 'Stays in place'
+        action.append(status)
+      } else {
+        const status = document.createElement('span')
+        status.textContent = copy.selected ? 'Move to review' : 'Leave in place'
+        const keepButton = document.createElement('button')
+        keepButton.type = 'button'
+        keepButton.dataset.role = 'keep-duplicate'
+        keepButton.textContent = 'Keep this copy instead'
+        action.append(status, keepButton)
+      }
+
+      row.append(choice, copyDetails, action)
+      copies.append(row)
+    }
+    card.append(copies)
+    fragment.append(card)
+  }
+
+  elements.previewList.append(fragment)
+  const hiddenCount = Math.max(0, groups.length - visibleGroups.length)
+  elements.previewMore.hidden = hiddenCount === 0
+  elements.previewVisibleCount.textContent = `Showing ${visibleGroups.length.toLocaleString()} of ${groups.length.toLocaleString()} duplicate groups`
+  elements.loadMoreButton.textContent = `Show ${Math.min(PREVIEW_PAGE_SIZE, hiddenCount).toLocaleString()} more groups`
+  renderControls()
+}
+
+function showMorePreviewRows() {
+  workspaceState.previewRenderLimit += PREVIEW_PAGE_SIZE
+  renderPreview()
+}
+
 async function handlePreviewChange(event) {
-  const row = event.target.closest('.preview-row')
+  const row = event.target.closest('[data-bookmark-id]')
   if (!row || !workspaceState.job) return
   const suggestion = workspaceState.job.suggestions.find(
     (item) => item.id === row.dataset.bookmarkId,
@@ -865,17 +1892,47 @@ async function handlePreviewChange(event) {
   if (event.target.dataset.role === 'select') {
     suggestion.selected = event.target.checked
   } else if (event.target.dataset.role === 'category') {
-    suggestion.category = Organizer.sanitizeCategory(event.target.value)
+    suggestion.category = Organizer.sanitizeCategoryPath(event.target.value)
     event.target.value = suggestion.category
     if (!workspaceState.job.categories.includes(suggestion.category)) {
-      workspaceState.job.categories.splice(
-        Math.max(0, workspaceState.job.categories.length - 1),
-        0,
-        suggestion.category,
-      )
+      workspaceState.job.categories.push(suggestion.category)
     }
+    const usedCategories = new Set(
+      workspaceState.job.suggestions.map((item) => item.category),
+    )
+    workspaceState.job.categories = workspaceState.job.categories.filter((category) =>
+      usedCategories.has(category),
+    )
   }
 
+  workspaceState.job.updatedAt = new Date().toISOString()
+  await persistJob()
+  renderJob()
+}
+
+async function handleDuplicatePreviewClick(event) {
+  const button = event.target.closest('[data-role="keep-duplicate"]')
+  if (!button || !isDuplicateReviewJob()) return
+  const row = button.closest('[data-bookmark-id]')
+  const groupCard = button.closest('[data-duplicate-group-key]')
+  if (!row || !groupCard) return
+
+  const group = workspaceState.job.suggestions.filter(
+    (suggestion) => suggestion.duplicateGroupKey === groupCard.dataset.duplicateGroupKey,
+  )
+  if (group.length < 2) return
+
+  const nextKeeper = group.find((suggestion) => suggestion.id === row.dataset.bookmarkId)
+  if (!nextKeeper) return
+  for (const suggestion of group) {
+    suggestion.duplicateKeeperId = nextKeeper.id
+    suggestion.selected = suggestion.id !== nextKeeper.id
+    suggestion.reason = suggestion.id === nextKeeper.id
+      ? 'Selected as the copy to keep in its current folder.'
+      : `Exact duplicate of “${nextKeeper.title || nextKeeper.url}” after ignoring tracking-only URL details.`
+  }
+
+  workspaceState.job.statusMessage = `Updated the keeper for ${nextKeeper.title || nextKeeper.url}. Review the selected extra copies before applying.`
   workspaceState.job.updatedAt = new Date().toISOString()
   await persistJob()
   renderJob()
@@ -884,7 +1941,9 @@ async function handlePreviewChange(event) {
 async function selectAllSuggestions() {
   if (!workspaceState.job) return
   for (const suggestion of workspaceState.job.suggestions) {
-    suggestion.selected = elements.selectAll.checked
+    suggestion.selected = isDuplicateReviewJob()
+      ? suggestion.id !== suggestion.duplicateKeeperId && elements.selectAll.checked
+      : elements.selectAll.checked
   }
   await persistJob()
   renderPreview()
@@ -894,11 +1953,20 @@ async function applySelected() {
   if (workspaceState.applying || workspaceState.job?.status !== 'complete') return
   const selected = workspaceState.job.suggestions.filter((suggestion) => suggestion.selected)
   if (selected.length === 0) return
+  if (hasOrganizerDestinationConflict(workspaceState.job.destinationRootId)) {
+    setStatus('Move the existing organized library to this destination, or choose its current location, before applying.', 'warning')
+    renderDestinationGuidance()
+    return
+  }
+  const sourceFolderCount = new Set(selected.map((suggestion) => suggestion.folderPath || 'Unfiled')).size
+  const destination = getDestinationFolder(workspaceState.job.destinationRootId)
+  const destinationPath = `${destination?.path || destination?.title || 'the selected destination'} / ${Organizer.ORGANIZER_FOLDER_NAME}`
+  const confirmation = isDuplicateReviewJob()
+    ? `Move ${selected.length.toLocaleString()} confirmed extra cop${selected.length === 1 ? 'y' : 'ies'} into ${destinationPath} / Duplicate Review? The keeper in each matching group stays in its current folder. Nothing is deleted, and you can undo every move from this workspace.`
+    : `Move ${selected.length.toLocaleString()} selected bookmarks from ${sourceFolderCount.toLocaleString()} existing folder${sourceFolderCount === 1 ? '' : 's'} into ${destinationPath}? Existing folders will be kept and may become empty. You can undo the bookmark moves from this workspace.`
 
   if (
-    !globalThis.confirm(
-      `Move ${selected.length.toLocaleString()} selected bookmarks into ${Organizer.ORGANIZER_FOLDER_NAME}? You can undo the bookmark moves from this workspace.`,
-    )
+    !globalThis.confirm(confirmation)
   ) {
     return
   }
@@ -923,10 +1991,19 @@ async function applySelected() {
 
     for (let index = 0; index < selected.length; index += 1) {
       const suggestion = selected[index]
-      const category = Organizer.sanitizeCategory(suggestion.category)
+      const category = Organizer.sanitizeCategoryPath(suggestion.category)
       if (!categoryFolders.has(category)) {
-        const folder = await Organizer.findOrCreateFolder(organizerFolder.id, category)
-        categoryFolders.set(category, folder.id)
+        let parentId = organizerFolder.id
+        const partialPath = []
+        for (const folderName of Organizer.splitCategoryPath(category)) {
+          partialPath.push(folderName)
+          const pathKey = partialPath.join(Organizer.CATEGORY_SEPARATOR)
+          if (!categoryFolders.has(pathKey)) {
+            const folder = await Organizer.findOrCreateFolder(parentId, folderName)
+            categoryFolders.set(pathKey, folder.id)
+          }
+          parentId = categoryFolders.get(pathKey)
+        }
       }
 
       try {
@@ -954,11 +2031,13 @@ async function applySelected() {
     workspaceState.job.statusMessage =
       failures.length > 0
         ? `Applied with ${failures.length} skipped bookmark${failures.length === 1 ? '' : 's'}.`
-        : `Moved ${history.entries.length.toLocaleString()} bookmarks. Undo remains available in this workspace.`
+        : isDuplicateReviewJob()
+          ? `Moved ${history.entries.length.toLocaleString()} extra cop${history.entries.length === 1 ? 'y' : 'ies'} to Duplicate Review. Keepers stayed in place; nothing was deleted. Undo remains available.`
+          : `Moved ${history.entries.length.toLocaleString()} bookmarks. Undo remains available in this workspace.`
     workspaceState.job.updatedAt = new Date().toISOString()
     await persistJob()
     elements.undoButton.hidden = history.entries.length === 0
-    workspaceState.tree = await Organizer.getBookmarkTree()
+    await refreshBookmarkTreeAndFolders()
   } catch (error) {
     console.error(error)
     workspaceState.job.status = 'complete'
@@ -1012,7 +2091,7 @@ async function undoLastApply() {
     await persistJob()
   }
 
-  workspaceState.tree = await Organizer.getBookmarkTree()
+  await refreshBookmarkTreeAndFolders()
   renderJob()
 }
 
@@ -1036,8 +2115,11 @@ async function askBookmarks() {
       scopeId: askScopeId,
       excludeOrganizer: false,
     })
+    const savedSuggestions = Array.isArray(workspaceState.job?.suggestions)
+      ? workspaceState.job.suggestions
+      : []
     const categoriesById = new Map(
-      (workspaceState.job?.suggestions || []).map((suggestion) => [
+      savedSuggestions.map((suggestion) => [
         suggestion.id,
         suggestion.category,
       ]),
@@ -1064,6 +2146,26 @@ async function askBookmarks() {
     elements.questionInput.value = ''
     updateComposerState()
     renderChat()
+
+    if (request.type === 'bookmark_count') {
+      const summary = Organizer.summarizeBookmarkLocations(bookmarks)
+      const scopeLabel =
+        [...elements.askScopeSelect.options]
+          .find((option) => option.value === askScopeId)
+          ?.textContent?.trim() || 'the selected scope'
+      const locationBreakdown = askScopeId === 'all' && summary.locations.length > 1
+        ? ` By location: ${summary.locations
+            .map((item) => `${item.location} (${item.count.toLocaleString()})`)
+            .join(', ')}.`
+        : ''
+      workspaceState.chat.push({
+        role: 'assistant',
+        text: `You have ${summary.total.toLocaleString()} bookmark${summary.total === 1 ? '' : 's'} in ${scopeLabel}.${locationBreakdown}`,
+        sources: [],
+        createdAt: new Date().toISOString(),
+      })
+      return
+    }
 
     if (request.type === 'duplicate_review') {
       const duplicateCopies = duplicateGroups.reduce(
@@ -1145,6 +2247,16 @@ async function askBookmarks() {
       } else {
         answer = buildFallbackAnswer(context, sessionResult.message)
       }
+    } catch (aiError) {
+      await Organizer.recordAiRuntimeFailure(aiError)
+      updateAiBadge({
+        available: false,
+        message: `Built-in AI answer failed: ${aiError?.message || 'unknown error'}`,
+      })
+      answer = buildFallbackAnswer(
+        context,
+        'Chrome Built-in AI could not complete this request. Local rules are active.',
+      )
     } finally {
       session?.destroy?.()
     }
@@ -1272,6 +2384,46 @@ async function prepareOrganizationSetup(action) {
   return true
 }
 
+async function startDuplicateReview() {
+  if (workspaceState.running || workspaceState.applying) return
+  if (isDuplicateReviewJob()) {
+    await exitDuplicateReview()
+    return
+  }
+  elements.duplicateReviewButton.disabled = true
+  elements.duplicateReviewButton.textContent = 'Finding…'
+  try {
+    await prepareDuplicateReview({
+      scopeId: elements.scopeSelect.value || 'all',
+    })
+  } catch (error) {
+    console.error(error)
+    setStatus(error.message || 'Unable to prepare the duplicate review.', 'warning')
+  } finally {
+    renderControls()
+  }
+}
+
+async function exitDuplicateReview() {
+  if (!isDuplicateReviewJob()) return
+  if (
+    workspaceState.job.status === 'complete' &&
+    !globalThis.confirm(
+      'Return to the organizer? This duplicate proposal will close, but no bookmarks have moved and you can run Find duplicates again.',
+    )
+  ) {
+    return
+  }
+
+  workspaceState.job = null
+  workspaceState.previewRenderLimit = PREVIEW_PAGE_SIZE
+  elements.instructionInput.value = ''
+  elements.excludeOrganizer.checked = true
+  await Organizer.removeStorage(Organizer.JOB_STORAGE_KEY)
+  renderJob()
+  await updateScopeCount()
+}
+
 async function prepareDuplicateReview(action) {
   if (workspaceState.running || workspaceState.applying) {
     throw new Error('Pause or finish the current organizer job before preparing another review.')
@@ -1292,19 +2444,7 @@ async function prepareDuplicateReview(action) {
     excludeOrganizer: false,
   }).filter((bookmark) => !isDuplicateReviewBookmark(bookmark))
   const groups = Organizer.findDuplicateGroups(bookmarks)
-  const suggestions = groups.flatMap((group) =>
-    group.duplicates.map((bookmark) => ({
-      id: bookmark.id,
-      title: bookmark.title || bookmark.url,
-      url: bookmark.url,
-      parentId: bookmark.parentId,
-      index: bookmark.index,
-      folderPath: bookmark.folderPath,
-      category: 'Duplicate Review',
-      reason: `Exact duplicate of “${group.keeper.title || group.keeper.url}” after ignoring tracking-only URL details.`,
-      selected: true,
-    })),
-  )
+  const suggestions = duplicateSuggestionsFromGroups(groups)
 
   if (suggestions.length === 0) {
     throw new Error('No actionable duplicate copies remain in this scope.')
@@ -1313,17 +2453,23 @@ async function prepareDuplicateReview(action) {
   const defaultRoot = Organizer.getDefaultDestinationRoot(tree)
   if (!defaultRoot?.id) throw new Error('No writable bookmark destination is available.')
   const scopeLabel =
-    [...elements.askScopeSelect.options]
+    [...elements.scopeSelect.options, ...elements.askScopeSelect.options]
       .find((option) => option.value === (action.scopeId || 'all'))
       ?.textContent?.trim() || 'Selected bookmarks'
   const now = new Date().toISOString()
+  const duplicateCount = groups.reduce(
+    (total, group) => total + group.duplicates.length,
+    0,
+  )
 
   workspaceState.tree = tree
+  workspaceState.previewRenderLimit = PREVIEW_PAGE_SIZE
   workspaceState.job = {
     version: 1,
     id: String(Date.now()),
+    mode: 'duplicate_review',
     status: 'complete',
-    statusMessage: `Prepared ${suggestions.length.toLocaleString()} duplicate cop${suggestions.length === 1 ? 'y' : 'ies'} for review. Nothing has moved yet.`,
+    statusMessage: `Found ${groups.length.toLocaleString()} duplicate group${groups.length === 1 ? '' : 's'} with ${duplicateCount.toLocaleString()} extra cop${duplicateCount === 1 ? 'y' : 'ies'}. Review which copy to keep; nothing has moved yet.`,
     scopeId: action.scopeId || 'all',
     scopeLabel,
     destinationRootId: elements.destinationSelect.value || defaultRoot.id,
@@ -1334,7 +2480,7 @@ async function prepareDuplicateReview(action) {
     processedIds: suggestions.map((suggestion) => suggestion.id),
     suggestions,
     categories: ['Duplicate Review'],
-    total: suggestions.length,
+    total: duplicateCount,
     startedAt: now,
     updatedAt: now,
   }
@@ -1651,7 +2797,7 @@ async function persistJob() {
 }
 
 function updateAiBadge(info) {
-  elements.aiBadge.textContent = info.available ? 'AI Ready' : 'Fallback'
+  elements.aiBadge.textContent = info.available ? 'AI Ready' : 'Local rules'
   elements.aiBadge.className = `badge ${info.available ? 'badge-success' : 'badge-warning'}`
   elements.aiBadge.title = info.message || ''
 }

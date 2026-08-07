@@ -16,7 +16,10 @@
   --luci-teal-deep: #0b6e66;
   --luci-teal-bright: #2dd4bf;
   --luci-amber: #b47914;
+  --luci-amber-ink: #7c4d0c;
+  --luci-amber-bright: #e0a83e;
   --luci-danger: #c83a44;
+  --luci-danger-bright: #f89aa0;
   --luci-on-teal: var(--luci-ink);
   --luci-line: color-mix(in srgb, var(--luci-ink) 10%, transparent);
   --luci-line-strong: color-mix(in srgb, var(--luci-ink) 16%, transparent);

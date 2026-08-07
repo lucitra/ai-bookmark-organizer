@@ -25,6 +25,7 @@ test('exposes the bounded Lucitra bookmark tool surface over MCP', async () => {
   assert.deepEqual(
     listed.result.tools.map((tool) => tool.name).sort(),
     [
+      'bookmarks_analyze_plan',
       'bookmarks_apply_plan',
       'bookmarks_find_duplicates',
       'bookmarks_list_folders',
@@ -39,6 +40,10 @@ test('exposes the bounded Lucitra bookmark tool surface over MCP', async () => {
   const applyTool = listed.result.tools.find((tool) => tool.name === 'bookmarks_apply_plan')
   assert.equal(applyTool.annotations.destructiveHint, true)
   assert.equal(applyTool.annotations.readOnlyHint, false)
+
+  const analyzeTool = listed.result.tools.find((tool) => tool.name === 'bookmarks_analyze_plan')
+  assert.equal(analyzeTool.annotations.readOnlyHint, true)
+  assert.equal(analyzeTool.inputSchema.properties.assignments.maxItems, 2000)
 
   const status = await server.handle({
     jsonrpc: '2.0',
@@ -69,4 +74,35 @@ test('rejects malformed write arguments before they reach Chrome', async () => {
   })
   assert.equal(response.error.code, -32602)
   assert.equal(called, false)
+})
+
+test('maps plan analysis to the read-only Chrome bridge method', async () => {
+  const calls = []
+  const server = createMcpServer({
+    bridgeRequest: async (method, params) => {
+      calls.push({ method, params })
+      return { broadCategories: [], tinyCategories: [] }
+    },
+  })
+  await server.handle({
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'initialize',
+    params: { protocolVersion: '2025-11-25' },
+  })
+
+  const response = await server.handle({
+    jsonrpc: '2.0',
+    id: 2,
+    method: 'tools/call',
+    params: {
+      name: 'bookmarks_analyze_plan',
+      arguments: {
+        assignments: [{ bookmarkId: '101', category: 'Technology › Developer Resources' }],
+      },
+    },
+  })
+
+  assert.equal(response.result.structuredContent.broadCategories.length, 0)
+  assert.equal(calls[0].method, 'bookmarks.analyze_plan')
 })

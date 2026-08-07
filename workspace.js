@@ -9,6 +9,11 @@ const CHAT_THREAD_LIMIT = 12
 
 const elements = {
   aiBadge: document.getElementById('aiBadge'),
+  organizeView: document.getElementById('organizeView'),
+  organizeTitle: document.getElementById('organizeTitle'),
+  organizeDescription: document.getElementById('organizeDescription'),
+  setupStepLabel: document.getElementById('setupStepLabel'),
+  setupTitle: document.getElementById('setupTitle'),
   scopeSelect: document.getElementById('scopeSelect'),
   askScopeSelect: document.getElementById('askScopeSelect'),
   askScopeCount: document.getElementById('askScopeCount'),
@@ -24,12 +29,15 @@ const elements = {
   pauseButton: document.getElementById('pauseButton'),
   resumeButton: document.getElementById('resumeButton'),
   cancelButton: document.getElementById('cancelButton'),
+  duplicateReviewButton: document.getElementById('duplicateReviewButton'),
   undoButton: document.getElementById('undoButton'),
   statusDot: document.getElementById('statusDot'),
   statusText: document.getElementById('statusText'),
   progressBar: document.getElementById('progressBar'),
   progressLabel: document.getElementById('progressLabel'),
   categoryPlan: document.getElementById('categoryPlan'),
+  planStepLabel: document.getElementById('planStepLabel'),
+  planTitle: document.getElementById('planTitle'),
   planCount: document.getElementById('planCount'),
   planVisualization: document.getElementById('planVisualization'),
   sourceTreeSummary: document.getElementById('sourceTreeSummary'),
@@ -45,12 +53,15 @@ const elements = {
   mergeTinyButton: document.getElementById('mergeTinyButton'),
   categoryOptions: document.getElementById('categoryOptions'),
   previewCount: document.getElementById('previewCount'),
+  previewStepLabel: document.getElementById('previewStepLabel'),
+  previewTitle: document.getElementById('previewTitle'),
   previewList: document.getElementById('previewList'),
   previewEmpty: document.getElementById('previewEmpty'),
   previewMore: document.getElementById('previewMore'),
   previewVisibleCount: document.getElementById('previewVisibleCount'),
   loadMoreButton: document.getElementById('loadMoreButton'),
   selectAll: document.getElementById('selectAll'),
+  selectAllLabel: document.getElementById('selectAllLabel'),
   applyButton: document.getElementById('applyButton'),
   questionInput: document.getElementById('questionInput'),
   askButton: document.getElementById('askButton'),
@@ -116,12 +127,14 @@ elements.startButton.addEventListener('click', startScan)
 elements.pauseButton.addEventListener('click', pauseScan)
 elements.resumeButton.addEventListener('click', resumeScan)
 elements.cancelButton.addEventListener('click', cancelScan)
+elements.duplicateReviewButton.addEventListener('click', startDuplicateReview)
 elements.refineLargeButton.addEventListener('click', refineLargeCategories)
 elements.mergeTinyButton.addEventListener('click', mergeTinyCategories)
 elements.applyButton.addEventListener('click', applySelected)
 elements.undoButton.addEventListener('click', undoLastApply)
 elements.selectAll.addEventListener('change', selectAllSuggestions)
 elements.previewList.addEventListener('change', handlePreviewChange)
+elements.previewList.addEventListener('click', handleDuplicatePreviewClick)
 elements.loadMoreButton.addEventListener('click', showMorePreviewRows)
 elements.askButton.addEventListener('click', askBookmarks)
 elements.newChatButton.addEventListener('click', newConversation)
@@ -180,6 +193,29 @@ async function initialize() {
 
     if (savedJob?.version === 1) {
       workspaceState.job = savedJob
+      if (isLegacyDuplicateReviewJob(savedJob)) {
+        const bookmarks = Organizer.collectBookmarks(tree, {
+          scopeId: savedJob.scopeId || 'all',
+          excludeOrganizer: false,
+        }).filter((bookmark) => !isDuplicateReviewBookmark(bookmark))
+        const groups = Organizer.findDuplicateGroups(bookmarks)
+        if (groups.length > 0) {
+          const duplicateCount = groups.reduce(
+            (total, group) => total + group.duplicates.length,
+            0,
+          )
+          workspaceState.job.mode = 'duplicate_review'
+          workspaceState.job.suggestions = duplicateSuggestionsFromGroups(groups)
+          workspaceState.job.bookmarkIds = workspaceState.job.suggestions.map(
+            (suggestion) => suggestion.id,
+          )
+          workspaceState.job.processedIds = [...workspaceState.job.bookmarkIds]
+          workspaceState.job.total = duplicateCount
+          workspaceState.job.statusMessage = `Updated this cleanup to show ${groups.length.toLocaleString()} duplicate group${groups.length === 1 ? '' : 's'} and the copy kept in each group. Nothing has moved yet.`
+          workspaceState.job.updatedAt = new Date().toISOString()
+          await persistJob()
+        }
+      }
       const defaultDestination = Organizer.getDefaultDestinationRoot(tree)
       if (Organizer.shouldMigrateLegacyDestination(savedJob, tree)) {
         workspaceState.job.destinationRootId = defaultDestination.id
@@ -445,12 +481,16 @@ function renderDestinationGuidance() {
   elements.moveLibraryButton.hidden = true
 
   if (locations.length === 0) {
-    elements.destinationHint.textContent = `Creates ${Organizer.ORGANIZER_FOLDER_NAME} in ${destination?.path || 'this location'}. Existing folders are kept.`
+    elements.destinationHint.textContent = isDuplicateReviewJob()
+      ? `Selected extras move to ${destination?.path || 'this location'} / ${Organizer.ORGANIZER_FOLDER_NAME} / Duplicate Review. Originals stay in place and nothing is deleted.`
+      : `Creates ${Organizer.ORGANIZER_FOLDER_NAME} in ${destination?.path || 'this location'}. Existing folders are kept.`
     return
   }
 
   if (current) {
-    elements.destinationHint.textContent = `Uses the existing organized library here (${current.bookmarkCount.toLocaleString()} bookmark${current.bookmarkCount === 1 ? '' : 's'}).`
+    elements.destinationHint.textContent = isDuplicateReviewJob()
+      ? `Selected extras move into Duplicate Review in this existing library. Originals stay in place and nothing is deleted.`
+      : `Uses the existing organized library here (${current.bookmarkCount.toLocaleString()} bookmark${current.bookmarkCount === 1 ? '' : 's'}).`
     if (locations.length > 1) {
       guidance.classList.add('is-warning')
       elements.destinationHint.textContent += ` ${locations.length} organized libraries currently exist.`
@@ -483,9 +523,18 @@ async function updateScopeCount() {
     scopeId,
     excludeOrganizer: elements.excludeOrganizer.checked,
   })
-  elements.scopeCount.textContent = `${bookmarks.length.toLocaleString()} bookmark${
-    bookmarks.length === 1 ? '' : 's'
-  }`
+  if (isDuplicateReviewJob()) {
+    const groups = duplicateReviewGroups()
+    const extraCopies = groups.reduce(
+      (total, group) => total + Math.max(0, group.copies.length - 1),
+      0,
+    )
+    elements.scopeCount.textContent = `${groups.length.toLocaleString()} group${groups.length === 1 ? '' : 's'} · ${extraCopies.toLocaleString()} extra cop${extraCopies === 1 ? 'y' : 'ies'}`
+  } else {
+    elements.scopeCount.textContent = `${bookmarks.length.toLocaleString()} bookmark${
+      bookmarks.length === 1 ? '' : 's'
+    }`
+  }
   const automaticOption = elements.categoryLimit.querySelector('option[value="auto"]')
   if (automaticOption) {
     automaticOption.textContent = `Auto — up to ${Organizer.recommendedCategoryLimit(bookmarks.length)} leaf folders`
@@ -512,7 +561,9 @@ async function handleDestinationChange() {
   job.updatedAt = new Date().toISOString()
   const destination = getDestinationFolder(job.destinationRootId)
   if (job.status === 'complete') {
-    job.statusMessage = `Destination updated to ${destination?.path || destination?.title || 'the selected folder'}. Review the proposed tree before applying.`
+    job.statusMessage = isDuplicateReviewJob(job)
+      ? `Duplicate Review destination updated to ${destination?.path || destination?.title || 'the selected folder'}. Review the selected extra copies before applying.`
+      : `Destination updated to ${destination?.path || destination?.title || 'the selected folder'}. Review the proposed tree before applying.`
   }
   await persistJob()
   renderJob()
@@ -1105,7 +1156,83 @@ function restoreJobControls() {
   elements.excludeOrganizer.checked = job.excludeOrganizer !== false
 }
 
+function isDuplicateReviewJob(job = workspaceState.job) {
+  return job?.mode === 'duplicate_review'
+}
+
+function isLegacyDuplicateReviewJob(job) {
+  return (
+    !job?.mode &&
+    job?.status === 'complete' &&
+    job?.categories?.length === 1 &&
+    job.categories[0] === 'Duplicate Review' &&
+    /quarantine exact duplicate copies/i.test(job.instruction || '')
+  )
+}
+
+function duplicateSuggestionsFromGroups(groups) {
+  return groups.flatMap((group) =>
+    group.bookmarks.map((bookmark) => ({
+      id: bookmark.id,
+      title: bookmark.title || bookmark.url,
+      url: bookmark.url,
+      parentId: bookmark.parentId,
+      index: bookmark.index,
+      folderPath: bookmark.folderPath,
+      category: 'Duplicate Review',
+      reason: bookmark.id === group.keeper.id
+        ? 'Selected as the copy to keep because it has the cleanest URL.'
+        : `Exact duplicate of “${group.keeper.title || group.keeper.url}” after ignoring tracking-only URL details.`,
+      selected: bookmark.id !== group.keeper.id,
+      duplicateGroupKey: group.normalizedUrl,
+      duplicateKeeperId: group.keeper.id,
+    })),
+  )
+}
+
+function duplicateReviewGroups(suggestions = workspaceState.job?.suggestions || []) {
+  const groups = new Map()
+  for (const suggestion of suggestions) {
+    const key = suggestion.duplicateGroupKey || suggestion.url || suggestion.id
+    const group = groups.get(key) || []
+    group.push(suggestion)
+    groups.set(key, group)
+  }
+  return [...groups.entries()].map(([key, copies]) => ({ key, copies }))
+}
+
+function renderWorkspaceMode() {
+  const duplicateMode = isDuplicateReviewJob()
+  const duplicateGroups = duplicateMode ? duplicateReviewGroups() : []
+  const extraCopies = duplicateGroups.reduce(
+    (total, group) => total + Math.max(0, group.copies.length - 1),
+    0,
+  )
+  elements.organizeView.classList.toggle('is-duplicate-review', duplicateMode)
+  elements.organizeTitle.textContent = duplicateMode
+    ? 'Review duplicate bookmarks'
+    : 'Organize bookmarks'
+  elements.organizeDescription.textContent = duplicateMode
+    ? 'Keep the right copy in place and move only confirmed extras into a reversible review folder.'
+    : 'Choose a scope, generate a plan, and review every move before applying it.'
+  elements.setupStepLabel.textContent = duplicateMode ? 'Cleanup' : 'Step 1'
+  elements.setupTitle.textContent = duplicateMode
+    ? 'Choose where extra copies should go'
+    : 'Choose what to organize'
+  elements.planStepLabel.textContent = duplicateMode ? 'Matches' : 'Step 2'
+  elements.planTitle.textContent = duplicateMode ? 'Duplicate groups' : 'Category plan'
+  elements.previewStepLabel.textContent = duplicateMode ? 'Review' : 'Step 3'
+  elements.previewTitle.textContent = duplicateMode
+    ? 'Choose extra copies to move'
+    : 'Review proposed moves'
+  elements.selectAllLabel.textContent = duplicateMode ? 'Select all extra copies' : 'Select all'
+  if (duplicateMode) {
+    elements.scopeCount.textContent = `${duplicateGroups.length.toLocaleString()} group${duplicateGroups.length === 1 ? '' : 's'} · ${extraCopies.toLocaleString()} extra cop${extraCopies === 1 ? 'y' : 'ies'}`
+  }
+}
+
 function renderJob() {
+  renderWorkspaceMode()
   renderControls()
   renderStatus()
   renderCategoryPlan()
@@ -1134,9 +1261,16 @@ function renderControls() {
   elements.resumeButton.disabled = workspaceState.running || !canResume
   elements.cancelButton.disabled =
     workspaceState.applying || !hasJob || ['complete', 'cancelled', 'applied'].includes(status)
+  elements.duplicateReviewButton.disabled = setupLocked
+  elements.duplicateReviewButton.textContent = isDuplicateReviewJob()
+    ? 'Back to organize'
+    : 'Find duplicates'
   const selectedSuggestions = workspaceState.job?.suggestions?.filter(
     (suggestion) => suggestion.selected,
   ) || []
+  elements.applyButton.textContent = isDuplicateReviewJob()
+    ? `Move ${selectedSuggestions.length.toLocaleString()} to review`
+    : 'Apply selected'
   elements.applyButton.disabled =
     workspaceState.applying ||
     status !== 'complete' ||
@@ -1185,6 +1319,11 @@ function renderCategoryPlan() {
   const categories = workspaceState.job?.categories || []
   elements.categoryPlan.replaceChildren()
   elements.categoryOptions.replaceChildren()
+
+  if (isDuplicateReviewJob()) {
+    renderDuplicatePlanSummary()
+    return
+  }
 
   if (categories.length === 0) {
     elements.categoryPlan.className = 'category-plan empty-copy'
@@ -1268,6 +1407,52 @@ function renderCategoryPlan() {
   elements.mergeTinyButton.hidden = merges.length === 0
   elements.mergeTinyButton.textContent = `Merge ${merges.length} tiny folder${merges.length === 1 ? '' : 's'}`
   elements.categoryHealthNote.hidden = refinable.length === 0 && merges.length === 0
+}
+
+function renderDuplicatePlanSummary() {
+  const groups = duplicateReviewGroups()
+  const extraCopies = groups.reduce(
+    (total, group) => total + Math.max(0, group.copies.length - 1),
+    0,
+  )
+  const selectedCopies = groups.reduce(
+    (total, group) => total + group.copies.filter((copy) => copy.selected).length,
+    0,
+  )
+  elements.categoryPlan.className = 'duplicate-plan-summary'
+  elements.planCount.textContent = `${groups.length.toLocaleString()} group${groups.length === 1 ? '' : 's'} · ${extraCopies.toLocaleString()} extra cop${extraCopies === 1 ? 'y' : 'ies'}`
+  elements.planVisualization.hidden = true
+  elements.categoryHealth.hidden = true
+
+  const items = [
+    {
+      value: groups.length,
+      label: `matching link${groups.length === 1 ? '' : 's'}`,
+    },
+    {
+      value: selectedCopies,
+      label: `cop${selectedCopies === 1 ? 'y' : 'ies'} selected to move`,
+    },
+    {
+      value: groups.length,
+      label: `keeper${groups.length === 1 ? '' : 's'} staying in place`,
+    },
+  ]
+  for (const item of items) {
+    const card = document.createElement('div')
+    card.className = 'duplicate-summary-item'
+    const value = document.createElement('strong')
+    value.textContent = item.value.toLocaleString()
+    const label = document.createElement('span')
+    label.textContent = item.label
+    card.append(value, label)
+    elements.categoryPlan.append(card)
+  }
+
+  const note = document.createElement('p')
+  note.className = 'duplicate-summary-note'
+  note.textContent = 'The cleanest URL is kept initially. Review each group below to keep a different copy or leave additional copies untouched. Nothing is deleted.'
+  elements.categoryPlan.append(note)
 }
 
 function getDestinationFolder(destinationRootId = workspaceState.job?.destinationRootId) {
@@ -1504,11 +1689,17 @@ async function mergeTinyCategories() {
 
 function renderPreview() {
   const suggestions = workspaceState.job?.suggestions || []
-  const visibleSuggestions = suggestions.slice(0, workspaceState.previewRenderLimit)
   elements.previewList.replaceChildren()
   elements.previewEmpty.hidden = suggestions.length > 0
   elements.previewList.hidden = suggestions.length === 0
   elements.previewMore.hidden = true
+
+  if (isDuplicateReviewJob()) {
+    renderDuplicatePreview(suggestions)
+    return
+  }
+
+  const visibleSuggestions = suggestions.slice(0, workspaceState.previewRenderLimit)
 
   const selectedCount = suggestions.filter((suggestion) => suggestion.selected).length
   elements.previewCount.textContent = `${selectedCount.toLocaleString()} of ${suggestions.length.toLocaleString()} selected`
@@ -1569,13 +1760,129 @@ function renderPreview() {
   renderControls()
 }
 
+function duplicateGroupDisplayName(group) {
+  const keeperId = group.copies[0]?.duplicateKeeperId
+  const keeper = group.copies.find((copy) => copy.id === keeperId) || group.copies[0]
+  try {
+    return new URL(keeper.url).hostname.replace(/^www\./, '')
+  } catch {
+    return keeper.title || keeper.url || 'Matching bookmark'
+  }
+}
+
+function renderDuplicatePreview(suggestions) {
+  const groups = duplicateReviewGroups(suggestions)
+  const potentialExtras = groups.reduce(
+    (total, group) => total + Math.max(0, group.copies.length - 1),
+    0,
+  )
+  const selectedCount = suggestions.filter((suggestion) => suggestion.selected).length
+  elements.previewCount.textContent = `${selectedCount.toLocaleString()} of ${potentialExtras.toLocaleString()} extra cop${potentialExtras === 1 ? 'y' : 'ies'} selected`
+  elements.selectAll.checked = potentialExtras > 0 && selectedCount === potentialExtras
+  elements.selectAll.indeterminate = selectedCount > 0 && selectedCount < potentialExtras
+
+  if (suggestions.length === 0) {
+    elements.previewEmpty.textContent = 'No duplicate groups are ready for review.'
+    renderControls()
+    return
+  }
+
+  const visibleGroups = groups.slice(0, workspaceState.previewRenderLimit)
+  const fragment = document.createDocumentFragment()
+  for (const group of visibleGroups) {
+    const keeperId = group.copies[0]?.duplicateKeeperId
+    const keeper = group.copies.find((copy) => copy.id === keeperId) || group.copies[0]
+    const card = document.createElement('section')
+    card.className = 'duplicate-group'
+    card.dataset.duplicateGroupKey = group.key
+
+    const heading = document.createElement('div')
+    heading.className = 'duplicate-group-heading'
+    const headingCopy = document.createElement('div')
+    const eyebrow = document.createElement('span')
+    eyebrow.textContent = duplicateGroupDisplayName(group)
+    const title = document.createElement('strong')
+    title.textContent = keeper.title || keeper.url
+    headingCopy.append(eyebrow, title)
+    const count = document.createElement('span')
+    count.className = 'duplicate-group-count'
+    count.textContent = `${group.copies.length} copies`
+    heading.append(headingCopy, count)
+    card.append(heading)
+
+    const copies = document.createElement('div')
+    copies.className = 'duplicate-copy-list'
+    for (const copy of group.copies) {
+      const isKeeper = copy.id === keeper.id
+      const row = document.createElement('div')
+      row.className = `duplicate-copy${isKeeper ? ' is-keeper' : copy.selected ? ' is-selected' : ''}`
+      row.dataset.bookmarkId = copy.id
+
+      const choice = document.createElement('div')
+      choice.className = 'duplicate-copy-choice'
+      if (isKeeper) {
+        const badge = document.createElement('span')
+        badge.className = 'duplicate-keeper-badge'
+        badge.textContent = 'Keep'
+        choice.append(badge)
+      } else {
+        const checkbox = document.createElement('input')
+        checkbox.className = 'preview-select'
+        checkbox.type = 'checkbox'
+        checkbox.checked = copy.selected
+        checkbox.dataset.role = 'select'
+        checkbox.setAttribute('aria-label', `Move ${copy.title || copy.url} to Duplicate Review`)
+        choice.append(checkbox)
+      }
+
+      const copyDetails = document.createElement('div')
+      copyDetails.className = 'duplicate-copy-details'
+      const copyTitle = document.createElement('strong')
+      copyTitle.textContent = copy.title || copy.url
+      const copyUrl = document.createElement('span')
+      copyUrl.textContent = copy.url
+      const copyPath = document.createElement('span')
+      copyPath.textContent = copy.folderPath || 'Unfiled'
+      copyDetails.append(copyTitle, copyUrl, copyPath)
+
+      const action = document.createElement('div')
+      action.className = 'duplicate-copy-action'
+      if (isKeeper) {
+        const status = document.createElement('span')
+        status.textContent = 'Stays in place'
+        action.append(status)
+      } else {
+        const status = document.createElement('span')
+        status.textContent = copy.selected ? 'Move to review' : 'Leave in place'
+        const keepButton = document.createElement('button')
+        keepButton.type = 'button'
+        keepButton.dataset.role = 'keep-duplicate'
+        keepButton.textContent = 'Keep this copy instead'
+        action.append(status, keepButton)
+      }
+
+      row.append(choice, copyDetails, action)
+      copies.append(row)
+    }
+    card.append(copies)
+    fragment.append(card)
+  }
+
+  elements.previewList.append(fragment)
+  const hiddenCount = Math.max(0, groups.length - visibleGroups.length)
+  elements.previewMore.hidden = hiddenCount === 0
+  elements.previewVisibleCount.textContent = `Showing ${visibleGroups.length.toLocaleString()} of ${groups.length.toLocaleString()} duplicate groups`
+  elements.loadMoreButton.textContent = `Show ${Math.min(PREVIEW_PAGE_SIZE, hiddenCount).toLocaleString()} more groups`
+  renderControls()
+}
+
 function showMorePreviewRows() {
   workspaceState.previewRenderLimit += PREVIEW_PAGE_SIZE
   renderPreview()
 }
 
 async function handlePreviewChange(event) {
-  const row = event.target.closest('.preview-row')
+  const row = event.target.closest('[data-bookmark-id]')
   if (!row || !workspaceState.job) return
   const suggestion = workspaceState.job.suggestions.find(
     (item) => item.id === row.dataset.bookmarkId,
@@ -1603,10 +1910,40 @@ async function handlePreviewChange(event) {
   renderJob()
 }
 
+async function handleDuplicatePreviewClick(event) {
+  const button = event.target.closest('[data-role="keep-duplicate"]')
+  if (!button || !isDuplicateReviewJob()) return
+  const row = button.closest('[data-bookmark-id]')
+  const groupCard = button.closest('[data-duplicate-group-key]')
+  if (!row || !groupCard) return
+
+  const group = workspaceState.job.suggestions.filter(
+    (suggestion) => suggestion.duplicateGroupKey === groupCard.dataset.duplicateGroupKey,
+  )
+  if (group.length < 2) return
+
+  const nextKeeper = group.find((suggestion) => suggestion.id === row.dataset.bookmarkId)
+  if (!nextKeeper) return
+  for (const suggestion of group) {
+    suggestion.duplicateKeeperId = nextKeeper.id
+    suggestion.selected = suggestion.id !== nextKeeper.id
+    suggestion.reason = suggestion.id === nextKeeper.id
+      ? 'Selected as the copy to keep in its current folder.'
+      : `Exact duplicate of “${nextKeeper.title || nextKeeper.url}” after ignoring tracking-only URL details.`
+  }
+
+  workspaceState.job.statusMessage = `Updated the keeper for ${nextKeeper.title || nextKeeper.url}. Review the selected extra copies before applying.`
+  workspaceState.job.updatedAt = new Date().toISOString()
+  await persistJob()
+  renderJob()
+}
+
 async function selectAllSuggestions() {
   if (!workspaceState.job) return
   for (const suggestion of workspaceState.job.suggestions) {
-    suggestion.selected = elements.selectAll.checked
+    suggestion.selected = isDuplicateReviewJob()
+      ? suggestion.id !== suggestion.duplicateKeeperId && elements.selectAll.checked
+      : elements.selectAll.checked
   }
   await persistJob()
   renderPreview()
@@ -1624,11 +1961,12 @@ async function applySelected() {
   const sourceFolderCount = new Set(selected.map((suggestion) => suggestion.folderPath || 'Unfiled')).size
   const destination = getDestinationFolder(workspaceState.job.destinationRootId)
   const destinationPath = `${destination?.path || destination?.title || 'the selected destination'} / ${Organizer.ORGANIZER_FOLDER_NAME}`
+  const confirmation = isDuplicateReviewJob()
+    ? `Move ${selected.length.toLocaleString()} confirmed extra cop${selected.length === 1 ? 'y' : 'ies'} into ${destinationPath} / Duplicate Review? The keeper in each matching group stays in its current folder. Nothing is deleted, and you can undo every move from this workspace.`
+    : `Move ${selected.length.toLocaleString()} selected bookmarks from ${sourceFolderCount.toLocaleString()} existing folder${sourceFolderCount === 1 ? '' : 's'} into ${destinationPath}? Existing folders will be kept and may become empty. You can undo the bookmark moves from this workspace.`
 
   if (
-    !globalThis.confirm(
-      `Move ${selected.length.toLocaleString()} selected bookmarks from ${sourceFolderCount.toLocaleString()} existing folder${sourceFolderCount === 1 ? '' : 's'} into ${destinationPath}? Existing folders will be kept and may become empty. You can undo the bookmark moves from this workspace.`,
-    )
+    !globalThis.confirm(confirmation)
   ) {
     return
   }
@@ -1693,7 +2031,9 @@ async function applySelected() {
     workspaceState.job.statusMessage =
       failures.length > 0
         ? `Applied with ${failures.length} skipped bookmark${failures.length === 1 ? '' : 's'}.`
-        : `Moved ${history.entries.length.toLocaleString()} bookmarks. Undo remains available in this workspace.`
+        : isDuplicateReviewJob()
+          ? `Moved ${history.entries.length.toLocaleString()} extra cop${history.entries.length === 1 ? 'y' : 'ies'} to Duplicate Review. Keepers stayed in place; nothing was deleted. Undo remains available.`
+          : `Moved ${history.entries.length.toLocaleString()} bookmarks. Undo remains available in this workspace.`
     workspaceState.job.updatedAt = new Date().toISOString()
     await persistJob()
     elements.undoButton.hidden = history.entries.length === 0
@@ -2044,6 +2384,46 @@ async function prepareOrganizationSetup(action) {
   return true
 }
 
+async function startDuplicateReview() {
+  if (workspaceState.running || workspaceState.applying) return
+  if (isDuplicateReviewJob()) {
+    await exitDuplicateReview()
+    return
+  }
+  elements.duplicateReviewButton.disabled = true
+  elements.duplicateReviewButton.textContent = 'Finding…'
+  try {
+    await prepareDuplicateReview({
+      scopeId: elements.scopeSelect.value || 'all',
+    })
+  } catch (error) {
+    console.error(error)
+    setStatus(error.message || 'Unable to prepare the duplicate review.', 'warning')
+  } finally {
+    renderControls()
+  }
+}
+
+async function exitDuplicateReview() {
+  if (!isDuplicateReviewJob()) return
+  if (
+    workspaceState.job.status === 'complete' &&
+    !globalThis.confirm(
+      'Return to the organizer? This duplicate proposal will close, but no bookmarks have moved and you can run Find duplicates again.',
+    )
+  ) {
+    return
+  }
+
+  workspaceState.job = null
+  workspaceState.previewRenderLimit = PREVIEW_PAGE_SIZE
+  elements.instructionInput.value = ''
+  elements.excludeOrganizer.checked = true
+  await Organizer.removeStorage(Organizer.JOB_STORAGE_KEY)
+  renderJob()
+  await updateScopeCount()
+}
+
 async function prepareDuplicateReview(action) {
   if (workspaceState.running || workspaceState.applying) {
     throw new Error('Pause or finish the current organizer job before preparing another review.')
@@ -2064,19 +2444,7 @@ async function prepareDuplicateReview(action) {
     excludeOrganizer: false,
   }).filter((bookmark) => !isDuplicateReviewBookmark(bookmark))
   const groups = Organizer.findDuplicateGroups(bookmarks)
-  const suggestions = groups.flatMap((group) =>
-    group.duplicates.map((bookmark) => ({
-      id: bookmark.id,
-      title: bookmark.title || bookmark.url,
-      url: bookmark.url,
-      parentId: bookmark.parentId,
-      index: bookmark.index,
-      folderPath: bookmark.folderPath,
-      category: 'Duplicate Review',
-      reason: `Exact duplicate of “${group.keeper.title || group.keeper.url}” after ignoring tracking-only URL details.`,
-      selected: true,
-    })),
-  )
+  const suggestions = duplicateSuggestionsFromGroups(groups)
 
   if (suggestions.length === 0) {
     throw new Error('No actionable duplicate copies remain in this scope.')
@@ -2085,18 +2453,23 @@ async function prepareDuplicateReview(action) {
   const defaultRoot = Organizer.getDefaultDestinationRoot(tree)
   if (!defaultRoot?.id) throw new Error('No writable bookmark destination is available.')
   const scopeLabel =
-    [...elements.askScopeSelect.options]
+    [...elements.scopeSelect.options, ...elements.askScopeSelect.options]
       .find((option) => option.value === (action.scopeId || 'all'))
       ?.textContent?.trim() || 'Selected bookmarks'
   const now = new Date().toISOString()
+  const duplicateCount = groups.reduce(
+    (total, group) => total + group.duplicates.length,
+    0,
+  )
 
   workspaceState.tree = tree
   workspaceState.previewRenderLimit = PREVIEW_PAGE_SIZE
   workspaceState.job = {
     version: 1,
     id: String(Date.now()),
+    mode: 'duplicate_review',
     status: 'complete',
-    statusMessage: `Prepared ${suggestions.length.toLocaleString()} duplicate cop${suggestions.length === 1 ? 'y' : 'ies'} for review. Nothing has moved yet.`,
+    statusMessage: `Found ${groups.length.toLocaleString()} duplicate group${groups.length === 1 ? '' : 's'} with ${duplicateCount.toLocaleString()} extra cop${duplicateCount === 1 ? 'y' : 'ies'}. Review which copy to keep; nothing has moved yet.`,
     scopeId: action.scopeId || 'all',
     scopeLabel,
     destinationRootId: elements.destinationSelect.value || defaultRoot.id,
@@ -2107,7 +2480,7 @@ async function prepareDuplicateReview(action) {
     processedIds: suggestions.map((suggestion) => suggestion.id),
     suggestions,
     categories: ['Duplicate Review'],
-    total: suggestions.length,
+    total: duplicateCount,
     startedAt: now,
     updatedAt: now,
   }

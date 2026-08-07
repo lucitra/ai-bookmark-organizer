@@ -58,8 +58,9 @@ cloud service.
 - Recognizes explicit organization requests in chat and turns them into a
   reviewable organizer setup. It never starts the scan or moves bookmarks from
   the conversation alone.
-- Turns exact-duplicate questions into a reversible review: extra copies can be
-  moved into `Duplicate Review` only after you inspect the proposal and apply it.
+- Provides a dedicated duplicate review from **Find duplicates** or Ask. Each
+  matching group shows the keeper and extra copies, lets you choose a different
+  keeper, and moves only confirmed extras into `Duplicate Review` after approval.
 
 In its default standalone mode, the extension does not fetch bookmarked pages,
 use a cloud AI API, require an account, or need an API key. Chrome may download
@@ -162,9 +163,12 @@ infrastructure, and design” produce a **Review setup** action. That action onl
 prefills the normal organizer scope and instruction. You must still select
 **Plan and scan**, review the proposed moves, and select **Apply selected**.
 
-For duplicate questions, **Review cleanup** prepares a normal organizer preview
-that moves extra canonical-URL copies into `Duplicate Review`. It never deletes
-them, and the resulting moves use the same undo path as other organizer changes.
+Select **Find duplicates** in Organize for the shortest path, or use **Review
+cleanup** after a duplicate question in Ask. The dedicated review groups
+canonical-URL matches, initially keeps the cleanest URL, and lets you choose
+**Keep this copy instead** for any group. Confirmed extras move into `Duplicate
+Review`; nothing is deleted, and the moves use the same undo path as other
+organizer changes.
 
 ## Agent Access
 

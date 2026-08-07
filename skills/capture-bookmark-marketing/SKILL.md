@@ -41,6 +41,14 @@ Use the isolated Chrome-for-Testing harness to exercise the packaged extension U
    npm --prefix skills/capture-bookmark-marketing/scripts run qa:large
    ```
 
+   After changing duplicate detection or cleanup UI, exercise the full grouped
+   review and keeper-swap path in the isolated browser. This writes a temporary
+   QA screenshot outside the repository and does not promote store assets:
+
+   ```bash
+   npm --prefix skills/capture-bookmark-marketing/scripts run qa:duplicate-ui
+   ```
+
 5. Verify dimensions, PNG integrity, uniqueness, report hashes, and release separation:
 
    ```bash

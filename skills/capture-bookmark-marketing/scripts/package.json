@@ -8,6 +8,7 @@
   },
   "scripts": {
     "capture": "node capture.mjs",
+    "qa:duplicate-ui": "node capture.mjs --qa-duplicate-ui",
     "qa:ask-large": "node qa-ask-large.mjs",
     "qa:large": "node qa-large.mjs",
     "verify": "node verify.mjs",

@@ -78,6 +78,10 @@ The organizer writes regular checkpoints, so a closed or interrupted workspace
 can resume from its latest checkpoint. Apply only selected changes, and use Undo
 last apply to move bookmarks back to their recorded folders.
 
+Find duplicates groups exact canonical-URL matches into a dedicated review. See
+which copy will stay, choose a different keeper when needed, and move only
+confirmed extras into Duplicate Review. Nothing is deleted.
+
 Ask Bookmarks answers questions from saved titles, URLs, folder paths, and
 organizer categories, with links back to relevant bookmarks. It does not fetch
 or read the linked webpages.
@@ -99,6 +103,7 @@ and separately authorizes each provider in Settings.
 - Guide organization with a plain-language instruction
 - Pause and resume checkpointed scans
 - Edit every category before applying selected moves
+- Review duplicate groups, choose the keeper, and move only confirmed extras
 - Undo the last set of bookmark moves
 - Ask metadata-grounded questions with bookmark source links
 - No Lucitra account, API key, subscription, analytics, or required cloud AI

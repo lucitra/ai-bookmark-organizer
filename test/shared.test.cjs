@@ -511,6 +511,27 @@ test('ships one-click FTUE presets for discovery, cleanup, and organization', ()
   assert.match(workspaceScript, /void askBookmarks\(\)/)
 })
 
+test('presents duplicate cleanup as grouped keeper review instead of organization', () => {
+  const workspaceHtml = readFileSync(join(__dirname, '..', 'workspace.html'), 'utf8')
+  const workspaceScript = readFileSync(join(__dirname, '..', 'workspace.js'), 'utf8')
+  const workspaceStyles = readFileSync(join(__dirname, '..', 'workspace.css'), 'utf8')
+
+  assert.match(workspaceHtml, /id="duplicateReviewButton"/)
+  assert.match(workspaceHtml, /id="selectAllLabel"/)
+  assert.match(workspaceScript, /mode: 'duplicate_review'/)
+  assert.match(workspaceScript, /group\.bookmarks\.map/)
+  assert.match(workspaceScript, /duplicateKeeperId: group\.keeper\.id/)
+  assert.match(workspaceScript, /Keep this copy instead/)
+  assert.match(workspaceScript, /async function startDuplicateReview\(\)/)
+  assert.match(workspaceScript, /async function exitDuplicateReview\(\)/)
+  assert.match(workspaceScript, /Back to organize/)
+  assert.match(workspaceScript, /The keeper in each matching group stays in its current folder/)
+  assert.match(workspaceScript, /Nothing is deleted/)
+  assert.match(workspaceStyles, /\.workspace-view\.is-duplicate-review \.instruction-starters/)
+  assert.match(workspaceStyles, /\.duplicate-group/)
+  assert.match(workspaceStyles, /\.duplicate-copy\.is-keeper/)
+})
+
 test('marks bookmark metadata as untrusted in every AI prompt', () => {
   const bookmark = Organizer.collectBookmarks(fixture, { scopeId: '10' })[1]
   assert.match(Organizer.buildInstructionDraftPrompt([bookmark], 8), /untrusted data/i)

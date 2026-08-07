@@ -204,6 +204,13 @@ a {
   margin-bottom: 20px;
 }
 
+.page-heading-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
 .step-label {
   margin: 0 0 5px;
   color: var(--luci-dim);
@@ -267,6 +274,23 @@ h2 {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 13px;
   align-items: end;
+}
+
+.workspace-view.is-duplicate-review .setup-grid {
+  grid-template-columns: minmax(280px, 520px);
+}
+
+.workspace-view.is-duplicate-review .scope-field,
+.workspace-view.is-duplicate-review .detail-field,
+.workspace-view.is-duplicate-review .organizer-skip-field,
+.workspace-view.is-duplicate-review .instruction-starters,
+.workspace-view.is-duplicate-review .instruction-field,
+.workspace-view.is-duplicate-review .setup-card .action-row {
+  display: none;
+}
+
+.workspace-view.is-duplicate-review .destination-field {
+  margin-bottom: 0;
 }
 
 .instruction-starters {
@@ -602,6 +626,39 @@ h2 {
   text-align: center;
 }
 
+.duplicate-plan-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.duplicate-summary-item {
+  display: grid;
+  gap: 2px;
+  border: 1px solid var(--luci-line);
+  border-radius: var(--luci-radius-sm);
+  background: color-mix(in srgb, var(--luci-ink) 1.5%, var(--luci-paper));
+  padding: 10px 11px;
+}
+
+.duplicate-summary-item strong {
+  color: var(--luci-ink);
+  font: 680 16px/1.2 var(--luci-font-mono);
+}
+
+.duplicate-summary-item span {
+  color: var(--luci-dim);
+  font-size: 10.5px;
+}
+
+.duplicate-summary-note {
+  grid-column: 1 / -1;
+  margin: 2px 0 0;
+  color: var(--luci-dim);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
 .plan-visualization {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr);
@@ -837,6 +894,136 @@ h2 {
 
 .preview-row.is-unselected {
   opacity: 0.52;
+}
+
+.duplicate-group {
+  overflow: hidden;
+  border: 1px solid var(--luci-line);
+  border-radius: var(--luci-radius-sm);
+  background: var(--luci-paper);
+}
+
+.duplicate-group + .duplicate-group {
+  margin-top: 10px;
+}
+
+.duplicate-group-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--luci-line);
+  background: color-mix(in srgb, var(--luci-ink) 1.5%, var(--luci-paper));
+  padding: 10px 12px;
+}
+
+.duplicate-group-heading > div {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.duplicate-group-heading span {
+  color: var(--luci-faint);
+  font: 530 9px/1.3 var(--luci-font-mono);
+}
+
+.duplicate-group-heading strong {
+  overflow: hidden;
+  color: var(--luci-ink);
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.duplicate-group-heading .duplicate-group-count {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--luci-ink) 5%, transparent);
+  color: var(--luci-dim);
+  padding: 3px 7px;
+}
+
+.duplicate-copy-list {
+  display: grid;
+}
+
+.duplicate-copy {
+  display: grid;
+  grid-template-columns: 54px minmax(220px, 1fr) minmax(150px, auto);
+  align-items: center;
+  gap: 12px;
+  min-height: 66px;
+  border-bottom: 1px solid var(--luci-line);
+  padding: 9px 12px;
+}
+
+.duplicate-copy:last-child {
+  border-bottom: 0;
+}
+
+.duplicate-copy.is-keeper {
+  background: color-mix(in srgb, var(--luci-teal) 4%, var(--luci-paper));
+}
+
+.duplicate-copy-choice {
+  display: flex;
+  align-items: center;
+}
+
+.duplicate-keeper-badge {
+  border-radius: 999px;
+  background: var(--luci-teal-soft);
+  color: var(--luci-teal);
+  padding: 4px 8px;
+  font: 680 9px/1.2 var(--luci-font-mono);
+  text-transform: uppercase;
+}
+
+.duplicate-copy-details {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.duplicate-copy-details strong,
+.duplicate-copy-details span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.duplicate-copy-details strong {
+  color: var(--luci-ink);
+  font-size: 11.5px;
+}
+
+.duplicate-copy-details span {
+  color: var(--luci-dim);
+  font: 500 9.5px/1.35 var(--luci-font-mono);
+}
+
+.duplicate-copy-action {
+  display: grid;
+  justify-items: end;
+  gap: 3px;
+  color: var(--luci-dim);
+  font-size: 10px;
+  text-align: right;
+}
+
+.duplicate-copy-action button {
+  border: 0;
+  background: transparent;
+  color: var(--luci-teal);
+  padding: 2px 0;
+  font-size: 9.5px;
+  font-weight: 670;
+  cursor: pointer;
+}
+
+.duplicate-copy-action button:hover {
+  text-decoration: underline;
 }
 
 .preview-select {

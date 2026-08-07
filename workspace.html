@@ -43,26 +43,31 @@
           <div class="page-heading">
             <div>
               <h1 id="organizeTitle">Organize bookmarks</h1>
-              <p>
+              <p id="organizeDescription">
                 Choose a scope, generate a plan, and review every move before applying it.
               </p>
             </div>
-            <button id="undoButton" class="button button-secondary" type="button" hidden>
-              Undo last apply
-            </button>
+            <div class="page-heading-actions">
+              <button id="duplicateReviewButton" class="button button-secondary" type="button">
+                Find duplicates
+              </button>
+              <button id="undoButton" class="button button-secondary" type="button" hidden>
+                Undo last apply
+              </button>
+            </div>
           </div>
 
           <section class="card setup-card" aria-labelledby="setupTitle">
             <div class="section-heading">
               <div>
-                <p class="step-label">Step 1</p>
+                <p id="setupStepLabel" class="step-label">Step 1</p>
                 <h2 id="setupTitle">Choose what to organize</h2>
               </div>
               <span id="scopeCount" class="count-label">Choose a scope</span>
             </div>
 
             <div class="setup-grid">
-              <label class="field">
+              <label class="field scope-field">
                 <span>Bookmark scope</span>
                 <select id="scopeSelect">
                   <option value="">Choose a folder or all bookmarks…</option>
@@ -70,7 +75,7 @@
                 </select>
               </label>
 
-              <div class="field">
+              <div class="field destination-field">
                 <label for="destinationSelect">Destination root</label>
                 <select id="destinationSelect"></select>
                 <div class="destination-guidance">
@@ -81,7 +86,7 @@
                 </div>
               </div>
 
-              <label class="field">
+              <label class="field detail-field">
                 <span>Organization detail</span>
                 <select id="categoryLimit">
                   <option value="auto" selected>Auto — based on collection</option>
@@ -94,7 +99,7 @@
                 </select>
               </label>
 
-              <label class="check-field">
+              <label class="check-field organizer-skip-field">
                 <input id="excludeOrganizer" type="checkbox" checked />
                 <span>
                   <strong>Skip previously organized bookmarks</strong>
@@ -150,7 +155,7 @@
               </div>
             </div>
 
-            <label class="field">
+            <label class="field instruction-field">
               <span>Organization instruction</span>
               <textarea
                 id="instructionInput"
@@ -190,7 +195,7 @@
           <section class="card plan-card" aria-labelledby="planTitle">
             <div class="section-heading">
               <div>
-                <p class="step-label">Step 2</p>
+                <p id="planStepLabel" class="step-label">Step 2</p>
                 <h2 id="planTitle">Category plan</h2>
               </div>
               <span id="planCount" class="count-label">Not planned</span>
@@ -240,13 +245,13 @@
           <section class="card preview-card" aria-labelledby="previewTitle">
             <div class="section-heading preview-toolbar">
               <div>
-                <p class="step-label">Step 3</p>
+                <p id="previewStepLabel" class="step-label">Step 3</p>
                 <h2 id="previewTitle">Review proposed moves</h2>
               </div>
               <div class="preview-actions">
                 <label class="select-all">
                   <input id="selectAll" type="checkbox" checked />
-                  <span>Select all</span>
+                  <span id="selectAllLabel">Select all</span>
                 </label>
                 <span id="previewCount" class="count-label">0 suggestions</span>
                 <button id="applyButton" class="button button-primary" type="button" disabled>

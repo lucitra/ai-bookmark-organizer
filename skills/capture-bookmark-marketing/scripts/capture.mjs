@@ -20,6 +20,7 @@ const extensionDir = process.env.LUCITRA_EXTENSION_DIR
 const generatedDir = join(projectDir, 'store-assets', 'generated')
 const viewport = Object.freeze({ width: 1280, height: 800, deviceScaleFactor: 1 })
 const headed = process.argv.includes('--headed')
+const duplicateUiQa = process.argv.includes('--qa-duplicate-ui')
 
 const fixtures = [
   {
@@ -103,13 +104,24 @@ async function configurePage(page) {
   ])
 }
 
-async function waitForWorkspaceReady(page) {
+async function waitForWorkspaceReady(page, consoleErrors = []) {
   await page.waitForSelector('#scopeSelect option[value="all"]')
-  await page.waitForFunction(() => {
-    const count = document.querySelector('#askScopeCount')?.textContent || ''
-    const status = document.querySelector('#statusText')?.textContent || ''
-    return !count.includes('Loading') && !status.includes('Loading')
-  }, { timeout: 30_000 })
+  try {
+    await page.waitForFunction(() => {
+      const count = document.querySelector('#askScopeCount')?.textContent || ''
+      const status = document.querySelector('#statusText')?.textContent || ''
+      return !count.includes('Loading') && !status.includes('Loading')
+    }, { timeout: 30_000 })
+  } catch (error) {
+    const state = await page.evaluate(() => ({
+      readyState: document.readyState,
+      askScopeCount: document.querySelector('#askScopeCount')?.textContent || null,
+      statusText: document.querySelector('#statusText')?.textContent || null,
+    }))
+    throw new Error(
+      `${error.message} Workspace state: ${JSON.stringify(state)}. Page errors: ${consoleErrors.join(' | ') || 'none'}`,
+    )
+  }
 }
 
 async function seedBookmarks(page) {
@@ -226,6 +238,9 @@ async function main() {
   let bookmarkManagerError = null
   let organizerRelocationRoundTrip = false
   let deterministicBookmarkCount = false
+  let duplicateKeeperSwap = false
+  let duplicateModeExit = false
+  let duplicateQaScreenshot = null
 
   try {
     browser = await puppeteer.launch({
@@ -263,10 +278,10 @@ async function main() {
       if (message.type() === 'error') consoleErrors.push(message.text())
     })
 
-    await waitForWorkspaceReady(workspacePage)
+    await waitForWorkspaceReady(workspacePage, consoleErrors)
     const fixtureState = await seedBookmarks(workspacePage)
     await workspacePage.reload({ waitUntil: 'domcontentloaded' })
-    await waitForWorkspaceReady(workspacePage)
+    await waitForWorkspaceReady(workspacePage, consoleErrors)
     await workspacePage.select('#scopeSelect', 'all')
     await workspacePage.click('[data-organizer-instruction*="specific, reusable topics"]')
     await workspacePage.click('#startButton')
@@ -472,6 +487,72 @@ async function main() {
       bookmarkManagerError = bookmarkManagerResult.error
     }
 
+    if (duplicateUiQa) {
+      await workspacePage.bringToFront()
+      await workspacePage.evaluate(() => {
+        globalThis.location.hash = 'organize'
+        globalThis.scrollTo(0, 0)
+      })
+      await workspacePage.waitForSelector('#organizeView:not([hidden])')
+      workspacePage.once('dialog', (dialog) => dialog.accept())
+      await workspacePage.click('#duplicateReviewButton')
+      await workspacePage.waitForSelector('#organizeView.is-duplicate-review:not([hidden])')
+      await workspacePage.waitForSelector('.duplicate-group .duplicate-copy.is-keeper')
+      const beforeKeeper = await workspacePage.$eval(
+        '.duplicate-copy.is-keeper .duplicate-copy-details strong',
+        (element) => element.textContent.trim(),
+      )
+      await workspacePage.click('[data-role="keep-duplicate"]')
+      await workspacePage.waitForFunction((previousKeeper) => {
+        const nextKeeper = document.querySelector(
+          '.duplicate-copy.is-keeper .duplicate-copy-details strong',
+        )?.textContent?.trim()
+        return nextKeeper && nextKeeper !== previousKeeper
+      }, {}, beforeKeeper)
+      const duplicateState = await workspacePage.evaluate(() => ({
+        groups: document.querySelectorAll('.duplicate-group').length,
+        keepers: document.querySelectorAll('.duplicate-copy.is-keeper').length,
+        selectedExtras: document.querySelectorAll('.duplicate-copy:not(.is-keeper) .preview-select:checked').length,
+        instructionControlsHidden:
+          getComputedStyle(document.querySelector('.instruction-starters')).display === 'none' &&
+          getComputedStyle(document.querySelector('.instruction-field')).display === 'none',
+        applyLabel: document.querySelector('#applyButton')?.textContent?.trim(),
+        exitLabel: document.querySelector('#duplicateReviewButton')?.textContent?.trim(),
+      }))
+      if (
+        duplicateState.groups !== 1 ||
+        duplicateState.keepers !== 1 ||
+        duplicateState.selectedExtras !== 1 ||
+        !duplicateState.instructionControlsHidden ||
+        duplicateState.applyLabel !== 'Move 1 to review' ||
+        duplicateState.exitLabel !== 'Back to organize'
+      ) {
+        fail(`Duplicate review UI did not reach the expected state: ${JSON.stringify(duplicateState)}`)
+      }
+      duplicateKeeperSwap = true
+      await workspacePage.evaluate(() => {
+        const target = document.querySelector('.preview-card')
+        globalThis.scrollTo(0, Math.max(0, target.offsetTop - 66))
+      })
+      await delay(250)
+      duplicateQaScreenshot = join(tmpdir(), 'lucitra-duplicate-review-qa.png')
+      await workspacePage.screenshot({
+        path: duplicateQaScreenshot,
+        type: 'png',
+        captureBeyondViewport: false,
+      })
+      workspacePage.once('dialog', (dialog) => dialog.accept())
+      await workspacePage.click('#duplicateReviewButton')
+      await workspacePage.waitForFunction(() => {
+        const view = document.querySelector('#organizeView')
+        const instructionDisplay = getComputedStyle(
+          document.querySelector('.instruction-starters'),
+        ).display
+        return !view.classList.contains('is-duplicate-review') && instructionDisplay !== 'none'
+      })
+      duplicateModeExit = true
+    }
+
     if (consoleErrors.length > 0) {
       fail(`Extension pages emitted console errors:\n${consoleErrors.join('\n')}`)
     }
@@ -492,6 +573,8 @@ async function main() {
       qa: {
         deterministicBookmarkCount,
         organizerRelocationRoundTrip,
+        duplicateKeeperSwap,
+        duplicateModeExit,
       },
       viewport,
       captures,
@@ -507,6 +590,9 @@ async function main() {
     }
     if (bookmarkManagerError) {
       console.warn(`Optional chrome://bookmarks capture unavailable: ${bookmarkManagerError}`)
+    }
+    if (duplicateQaScreenshot) {
+      console.log(`Duplicate review QA passed after direct entry, keeper swap, and exit: ${duplicateQaScreenshot}`)
     }
     console.log(`Review output: ${generatedDir}`)
   } finally {
